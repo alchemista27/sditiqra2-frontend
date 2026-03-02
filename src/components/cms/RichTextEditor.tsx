@@ -134,10 +134,10 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
     const url = window.prompt('Masukkan URL link:', previousUrl || 'https://');
     if (url === null) return;
     if (url === '') {
-      editor.chain().focus().extendMarkToWordBoundary().unsetLink().run();
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
       return;
     }
-    editor.chain().focus().extendMarkToWordBoundary().setLink({ href: url }).run();
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   };
 
   if (!editor) return null;
