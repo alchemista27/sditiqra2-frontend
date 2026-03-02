@@ -15,6 +15,12 @@ const navItems = [
   { href: '/admin/attendance', icon: 'how_to_reg', label: 'Kehadiran Staf' },
 ];
 
+const settingsItems = [
+  { href: '/admin/menu', icon: 'menu', label: 'Menu Navigasi' },
+  { href: '/admin/settings/general', icon: 'tune', label: 'Pengaturan Umum' },
+  { href: '/admin/settings/homepage', icon: 'web', label: 'Editor Homepage' },
+];
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -78,6 +84,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
             );
           })}
+
+          {/* Pengaturan Section */}
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1rem' }}>Pengaturan</div>
+          {settingsItems.map(item => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href);
+            return (
+              <Link key={item.href} href={item.href} style={{
+                display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.65rem 0.75rem', borderRadius: 10, marginBottom: '0.15rem',
+                background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+                textDecoration: 'none', fontSize: 14, fontWeight: isActive ? 600 : 400,
+                transition: 'all 0.15s',
+                borderLeft: isActive ? '3px solid #C9A84C' : '3px solid transparent',
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* User Info */}
@@ -97,7 +123,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Top bar */}
         <div style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
           <div style={{ fontWeight: 600, color: '#111827', fontSize: 15 }}>
-            {navItems.find(n => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(n.href)))?.label || 'Dashboard'}
+            {[...navItems, ...settingsItems].find(n => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(n.href)))?.label || 'Dashboard'}
           </div>
           <Link href="/" target="_blank" style={{ fontSize: 13, color: '#1B6B44', textDecoration: 'none', fontWeight: 500 }}>Lihat Website →</Link>
         </div>

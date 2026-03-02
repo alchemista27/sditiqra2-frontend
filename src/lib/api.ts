@@ -125,9 +125,89 @@ export const attendanceApi = {
   // Pegawai / Guru
   clockIn: (token: string) => fetcher('/attendance/clock-in', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
   clockOut: (token: string) => fetcher('/attendance/clock-out', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
-  getMyLogs: (token: string, month: number, year: number) => fetcher<{ data: any[] }>(`/attendance/my-logs?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } }),
-  
+  getMyLogs: (token: string, month: number, year: number) => fetcher<{ data: unknown[] }>(`/attendance/my-logs?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } }),
+
   // Admin
-  getTodayLogs: (token: string) => fetcher<{ data: any[] }>('/attendance/logs/today', { headers: { Authorization: `Bearer ${token}` } }),
-  getAllEmployees: (token: string) => fetcher<{ data: any[] }>('/attendance/employees', { headers: { Authorization: `Bearer ${token}` } }),
+  getTodayLogs: (token: string) => fetcher<{ data: unknown[] }>('/attendance/logs/today', { headers: { Authorization: `Bearer ${token}` } }),
+  getAllEmployees: (token: string) => fetcher<{ data: unknown[] }>('/attendance/employees', { headers: { Authorization: `Bearer ${token}` } }),
+};
+
+// ─── SITE SETTINGS ───────────────────────────────────────────
+export const settingsApi = {
+  // Publik — frontend baca untuk render header/homepage
+  getAll: () => fetcher<{ data: Record<string, string> }>('/cms/settings'),
+  getOne: (key: string) => fetcher<{ data: { key: string; value: string } }>(`/cms/settings/${key}`),
+
+  // Admin — batch update semua settings sekaligus
+  updateMany: (token: string, body: Record<string, string>) =>
+    fetcher('/cms/settings', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    }),
+
+  // Admin — upload logo / favicon (multipart)
+  uploadLogo: (token: string, file: File) => {
+    const fd = new FormData();
+    fd.append('logo', file);
+    return fetch(`${API_URL}/cms/settings/upload-logo`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    }).then(r => r.json());
+  },
+
+  uploadFavicon: (token: string, file: File) => {
+    const fd = new FormData();
+    fd.append('favicon', file);
+    return fetch(`${API_URL}/cms/settings/upload-favicon`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    }).then(r => r.json());
+  },
+};
+
+// ─── MENU NAVIGASI ───────────────────────────────────────────
+export interface MenuItem {
+  id: string;
+  label: string;
+  url: string;
+  order: number;
+  isActive: boolean;
+  openInNewTab: boolean;
+}
+
+export const menuApi = {
+  // Publik — navbar baca menu aktif (digunakan di layout.tsx SSR)
+  getAll: () => fetcher<{ data: MenuItem[] }>('/cms/menu'),
+
+  // Admin CRUD + reorder
+  create: (token: string, body: Partial<MenuItem>) =>
+    fetcher<{ data: MenuItem }>('/cms/menu', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    }),
+
+  update: (token: string, id: string, body: Partial<MenuItem>) =>
+    fetcher<{ data: MenuItem }>(`/cms/menu/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    }),
+
+  remove: (token: string, id: string) =>
+    fetcher(`/cms/menu/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+
+  // Simpan urutan baru setelah drag-and-drop
+  reorder: (token: string, items: { id: string; order: number }[]) =>
+    fetcher('/cms/menu/reorder', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ items }),
+    }),
 };

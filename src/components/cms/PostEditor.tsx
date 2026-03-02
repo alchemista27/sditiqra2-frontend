@@ -4,6 +4,17 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { postsApi, categoriesApi } from '@/lib/api';
 import { getToken } from '@/lib/auth';
+import dynamic from 'next/dynamic';
+
+// Load RichTextEditor secara dinamis agar tidak ada SSR error
+const RichTextEditor = dynamic(() => import('@/components/cms/RichTextEditor'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ border: '1.5px solid #E5E7EB', borderRadius: 12, minHeight: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9CA3AF', fontSize: 14 }}>
+      Memuat editor...
+    </div>
+  ),
+});
 
 interface Props {
   mode: 'create' | 'edit';
@@ -15,10 +26,11 @@ export default function PostEditor({ mode, postId }: Props) {
   const [form, setForm] = useState({ title: '', excerpt: '', content: '', categoryId: '', status: 'DRAFT' });
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [editorKey, setEditorKey] = useState(0); // untuk force-reset editor setelah save
 
   useEffect(() => {
     categoriesApi.getAll().then(r => setCategories(r.data)).catch(() => {});
@@ -41,7 +53,8 @@ export default function PostEditor({ mode, postId }: Props) {
 
   const handleSubmit = async (e: React.FormEvent, saveStatus?: string) => {
     e.preventDefault();
-    if (!form.title || !form.content) { setError('Judul dan konten wajib diisi.'); return; }
+    if (!form.title) { setError('Judul berita wajib diisi.'); return; }
+    if (!form.content || form.content === '<p></p>') { setError('Konten berita tidak boleh kosong.'); return; }
 
     setSaving(true);
     setError('');
@@ -57,12 +70,17 @@ export default function PostEditor({ mode, postId }: Props) {
 
       if (mode === 'create') {
         await postsApi.create(token, fd);
+        // Reset editor setelah berhasil buat artikel baru
+        setForm({ title: '', excerpt: '', content: '', categoryId: '', status: 'DRAFT' });
+        setCoverFile(null);
+        setCoverPreview('');
+        setEditorKey(k => k + 1);
       } else {
         await postsApi.update(token, postId!, fd);
       }
       router.push('/admin/posts');
-    } catch (err: any) {
-      setError(err.message || 'Gagal menyimpan berita.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan berita.');
     } finally {
       setSaving(false);
     }
@@ -80,7 +98,11 @@ export default function PostEditor({ mode, postId }: Props) {
         <h1 style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>{mode === 'create' ? 'Tulis Berita Baru' : 'Edit Berita'}</h1>
       </div>
 
-      {error && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14 }}>⚠️ {error}</div>}
+      {error && (
+        <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>warning</span> {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
@@ -100,10 +122,12 @@ export default function PostEditor({ mode, postId }: Props) {
               </div>
               <div>
                 <label style={labelStyle}>Konten Berita *</label>
-                <textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
-                  placeholder="Tulis konten berita di sini... (mendukung HTML)"
-                  rows={16} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }} required />
-                <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: '0.5rem' }}>💡 Konten mendukung format HTML. Contoh: &lt;strong&gt;teks tebal&lt;/strong&gt;, &lt;ul&gt;&lt;li&gt;poin&lt;/li&gt;&lt;/ul&gt;</p>
+                <RichTextEditor
+                  key={editorKey}
+                  content={form.content}
+                  onChange={(html) => setForm(f => ({ ...f, content: html }))}
+                  placeholder="Mulai menulis konten berita di sini..."
+                />
               </div>
             </div>
           </div>
@@ -141,16 +165,18 @@ export default function PostEditor({ mode, postId }: Props) {
               <select value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
                 style={{ ...inputStyle, cursor: 'pointer' }}>
                 <option value="">Tanpa Kategori</option>
-                {categories.map((cat: any) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
               </select>
             </div>
 
             {/* Cover Image */}
             <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '1.25rem' }}>
               <h3 style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: '1rem' }}>Foto Sampul</h3>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               {coverPreview && <img src={coverPreview} alt="Preview" style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 10, marginBottom: '0.75rem' }} />}
-              <label style={{ display: 'block', padding: '0.65rem', background: '#F3F4F6', border: '2px dashed #D1D5DB', borderRadius: 10, textAlign: 'center', fontSize: 13, color: '#6B7280', cursor: 'pointer' }}>
-                {coverPreview ? '🔄 Ganti Foto' : '📷 Pilih Foto Sampul'}
+              <label style={{ padding: '0.65rem', background: '#F3F4F6', border: '2px dashed #D1D5DB', borderRadius: 10, textAlign: 'center', fontSize: 13, color: '#6B7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{coverPreview ? 'sync' : 'add_photo_alternate'}</span>
+                {coverPreview ? 'Ganti Foto' : 'Pilih Foto Sampul'}
                 <input type="file" accept="image/*" onChange={handleCoverChange} style={{ display: 'none' }} />
               </label>
             </div>
