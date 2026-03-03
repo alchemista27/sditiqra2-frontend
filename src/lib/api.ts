@@ -55,7 +55,7 @@ export const postsApi = {
     fetcher(`/cms/posts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };
 
-// ─── PPDB TAHUN AJARAN (publik & admin) ──────────────────────
+// ─── PPDB TAHUN AJARAN ────────────────────────────────────────
 export const academicYearsApi = {
   getActive: () => fetcher<{ data: any }>('/ppdb/academic-years/active'),
   getAll: (token: string) => fetcher<{ data: any[] }>('/ppdb/academic-years', { headers: { Authorization: `Bearer ${token}` } }),
@@ -66,10 +66,7 @@ export const academicYearsApi = {
 };
 
 // ─── PPDB PORTAL ORANG TUA ────────────────────────────────────
-// Auth orang tua menggunakan endpoint /auth (login bersama admin)
-// dan /auth/register-parent (registrasi khusus orang tua)
 export const ppdbParentApi = {
-  // Auth
   register: (data: { name: string; email: string; phone: string; password: string }) =>
     fetcher<{ data: { token: string; user: any } }>('/auth/register-parent', {
       method: 'POST', body: JSON.stringify(data),
@@ -81,7 +78,6 @@ export const ppdbParentApi = {
   me: (token: string) =>
     fetcher<{ data: any }>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
 
-  // Registrasi pendaftaran
   start: (token: string) =>
     fetcher<{ data: any }>('/ppdb/start', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
   getMyRegistration: (token: string) =>
@@ -89,7 +85,6 @@ export const ppdbParentApi = {
   getMyResult: (token: string) =>
     fetcher<{ data: any }>('/ppdb/my-result', { headers: { Authorization: `Bearer ${token}` } }),
 
-  // Tahap 1: Pembayaran
   uploadPayment: (token: string, file: File, note?: string) => {
     const fd = new FormData();
     fd.append('file', file);
@@ -99,7 +94,6 @@ export const ppdbParentApi = {
     }).then(r => r.json());
   },
 
-  // Tahap 2: Formulir biodata
   saveStudentForm: (token: string, data: any) =>
     fetcher('/ppdb/form/student', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
   saveParentForm: (token: string, data: any) =>
@@ -114,7 +108,6 @@ export const ppdbParentApi = {
   submitForm: (token: string) =>
     fetcher('/ppdb/form/submit', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
 
-  // Tahap 3: Surat klinik
   downloadReferralLetter: (token: string) =>
     fetch(`${API_URL}/ppdb/referral-letter`, { headers: { Authorization: `Bearer ${token}` } }),
   uploadClinicCert: (token: string, file: File) => {
@@ -125,7 +118,6 @@ export const ppdbParentApi = {
     }).then(r => r.json());
   },
 
-  // Tahap 4: Observasi
   getAvailableSlots: (token: string) =>
     fetcher<{ data: any[] }>('/ppdb/observation-slots', { headers: { Authorization: `Bearer ${token}` } }),
   bookSlot: (token: string, slotId: string) =>
@@ -134,43 +126,40 @@ export const ppdbParentApi = {
 
 // ─── PPDB ADMIN ───────────────────────────────────────────────
 export const ppdbAdminApi = {
-  // Dashboard
   getStats: (token: string) =>
     fetcher<{ data: any }>('/ppdb/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
 
-  // Registrasi
   getAll: (token: string, params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : '';
     return fetcher<{ data: { data: any[]; pagination: any } }>(`/ppdb/admin/registrations${q}`, { headers: { Authorization: `Bearer ${token}` } });
   },
-  getOne: (token: string, id: string) =>
+  getDetail: (token: string, id: string) =>
     fetcher<{ data: any }>(`/ppdb/admin/registrations/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
   reviewRegistration: (token: string, id: string, data: { result: string; note?: string }) =>
     fetcher(`/ppdb/admin/registrations/${id}/review`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
-  recordObservation: (token: string, id: string, data: { result: string; note?: string }) =>
+  recordObservationResult: (token: string, id: string, data: { result: string; note?: string }) =>
     fetcher(`/ppdb/admin/registrations/${id}/observation`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
-  assignClass: (token: string, id: string, classroomId: string) =>
+  assignClassroom: (token: string, id: string, classroomId: string) =>
     fetcher(`/ppdb/admin/registrations/${id}/assign-class`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ classroomId }) }),
 
-  // Verifikasi pembayaran
   getPendingPayments: (token: string) =>
     fetcher<{ data: any[] }>('/ppdb/admin/payments', { headers: { Authorization: `Bearer ${token}` } }),
-  verifyPayment: (token: string, id: string) =>
-    fetcher(`/ppdb/admin/payments/${id}/verify`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }),
+  verifyPayment: (token: string, id: string, opts: { approved: boolean; note?: string }) =>
+    opts.approved
+      ? fetcher(`/ppdb/admin/payments/${id}/verify`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } })
+      : fetcher(`/ppdb/admin/payments/${id}/reject`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ reason: opts.note }) }),
   rejectPayment: (token: string, id: string, reason: string) =>
     fetcher(`/ppdb/admin/payments/${id}/reject`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ reason }) }),
 
-  // Slot observasi
-  getSlots: (token: string) =>
+  getObservationSlots: (token: string) =>
     fetcher<{ data: any[] }>('/ppdb/admin/observation-slots', { headers: { Authorization: `Bearer ${token}` } }),
-  createSlot: (token: string, data: any) =>
+  createObservationSlot: (token: string, data: any) =>
     fetcher('/ppdb/admin/observation-slots', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
-  updateSlot: (token: string, id: string, data: any) =>
+  updateObservationSlot: (token: string, id: string, data: any) =>
     fetcher(`/ppdb/admin/observation-slots/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
-  deleteSlot: (token: string, id: string) =>
+  deleteObservationSlot: (token: string, id: string) =>
     fetcher(`/ppdb/admin/observation-slots/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 
-  // Kelas paralel
   getClassrooms: (token: string) =>
     fetcher<{ data: any[] }>('/ppdb/admin/classrooms', { headers: { Authorization: `Bearer ${token}` } }),
   createClassroom: (token: string, data: any) =>
@@ -204,49 +193,28 @@ export const categoriesApi = {
 
 // ─── KEHADIRAN (Attendance) ──────────────────────────────────
 export const attendanceApi = {
-  // Pegawai / Guru
   clockIn: (token: string) => fetcher('/attendance/clock-in', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
   clockOut: (token: string) => fetcher('/attendance/clock-out', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
   getMyLogs: (token: string, month: number, year: number) => fetcher<{ data: unknown[] }>(`/attendance/my-logs?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } }),
-
-  // Admin
   getTodayLogs: (token: string) => fetcher<{ data: unknown[] }>('/attendance/logs/today', { headers: { Authorization: `Bearer ${token}` } }),
   getAllEmployees: (token: string) => fetcher<{ data: unknown[] }>('/attendance/employees', { headers: { Authorization: `Bearer ${token}` } }),
 };
 
 // ─── SITE SETTINGS ───────────────────────────────────────────
 export const settingsApi = {
-  // Publik — frontend baca untuk render header/homepage
   getAll: () => fetcher<{ data: Record<string, string> }>('/cms/settings'),
   getOne: (key: string) => fetcher<{ data: { key: string; value: string } }>(`/cms/settings/${key}`),
-
-  // Admin — batch update semua settings sekaligus
   updateMany: (token: string, body: Record<string, string>) =>
-    fetcher('/cms/settings', {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    }),
-
-  // Admin — upload logo / favicon (multipart)
+    fetcher('/cms/settings', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
   uploadLogo: (token: string, file: File) => {
     const fd = new FormData();
     fd.append('logo', file);
-    return fetch(`${API_URL}/cms/settings/upload-logo`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: fd,
-    }).then(r => r.json());
+    return fetch(`${API_URL}/cms/settings/upload-logo`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd }).then(r => r.json());
   },
-
   uploadFavicon: (token: string, file: File) => {
     const fd = new FormData();
     fd.append('favicon', file);
-    return fetch(`${API_URL}/cms/settings/upload-favicon`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: fd,
-    }).then(r => r.json());
+    return fetch(`${API_URL}/cms/settings/upload-favicon`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd }).then(r => r.json());
   },
 };
 
@@ -261,35 +229,13 @@ export interface MenuItem {
 }
 
 export const menuApi = {
-  // Publik — navbar baca menu aktif (digunakan di layout.tsx SSR)
   getAll: () => fetcher<{ data: MenuItem[] }>('/cms/menu'),
-
-  // Admin CRUD + reorder
   create: (token: string, body: Partial<MenuItem>) =>
-    fetcher<{ data: MenuItem }>('/cms/menu', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    }),
-
+    fetcher<{ data: MenuItem }>('/cms/menu', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
   update: (token: string, id: string, body: Partial<MenuItem>) =>
-    fetcher<{ data: MenuItem }>(`/cms/menu/${id}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(body),
-    }),
-
+    fetcher<{ data: MenuItem }>(`/cms/menu/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }),
   remove: (token: string, id: string) =>
-    fetcher(`/cms/menu/${id}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-
-  // Simpan urutan baru setelah drag-and-drop
+    fetcher(`/cms/menu/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
   reorder: (token: string, items: { id: string; order: number }[]) =>
-    fetcher('/cms/menu/reorder', {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ items }),
-    }),
+    fetcher('/cms/menu/reorder', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ items }) }),
 };

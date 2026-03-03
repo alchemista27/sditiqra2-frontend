@@ -11,7 +11,9 @@ const navItems = [
   { href: '/admin/pages', icon: 'description', label: 'Halaman' },
   { href: '/admin/categories', icon: 'label', label: 'Kategori' },
   { href: '/admin/media', icon: 'image', label: 'Media' },
-  { href: '/admin/ppdb', icon: 'school', label: 'PPDB & Tahun Ajaran' },
+  { href: '/admin/ppdb', icon: 'school', label: 'PPDB — Pendaftaran' },
+  { href: '/admin/ppdb/observasi', icon: 'event_available', label: 'PPDB — Observasi' },
+  { href: '/admin/ppdb/kelas', icon: 'meeting_room', label: 'PPDB — Kelas' },
   { href: '/admin/attendance', icon: 'how_to_reg', label: 'Kehadiran Staf' },
 ];
 
