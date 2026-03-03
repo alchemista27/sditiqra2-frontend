@@ -55,48 +55,130 @@ export const postsApi = {
     fetcher(`/cms/posts/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };
 
-// PPDB (Academic Years)
+// ─── PPDB TAHUN AJARAN (publik & admin) ──────────────────────
 export const academicYearsApi = {
   getActive: () => fetcher<{ data: any }>('/ppdb/academic-years/active'),
-  getAll: (token: string) => fetcher<{ data: any[] }>('/ppdb/academic-years', { headers: { Authorization: `Bearer ${token}` }}),
+  getAll: (token: string) => fetcher<{ data: any[] }>('/ppdb/academic-years', { headers: { Authorization: `Bearer ${token}` } }),
   create: (token: string, data: any) => fetcher('/ppdb/academic-years', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
   update: (token: string, id: string, data: any) => fetcher(`/ppdb/academic-years/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
   setActive: (token: string, id: string) => fetcher(`/ppdb/academic-years/${id}/active`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }),
   delete: (token: string, id: string) => fetcher(`/ppdb/academic-years/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };
 
-// PPDB (Registrations)
-export const registrationsApi = {
-  getAll: (token: string, params?: any) => {
-    const query = new URLSearchParams(params).toString();
-    return fetcher<{ data: any[] }>(`/ppdb/registrations${query ? `?${query}` : ''}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+// ─── PPDB PORTAL ORANG TUA ────────────────────────────────────
+// Auth orang tua menggunakan endpoint /auth (login bersama admin)
+// dan /auth/register-parent (registrasi khusus orang tua)
+export const ppdbParentApi = {
+  // Auth
+  register: (data: { name: string; email: string; phone: string; password: string }) =>
+    fetcher<{ data: { token: string; user: any } }>('/auth/register-parent', {
+      method: 'POST', body: JSON.stringify(data),
+    }),
+  login: (email: string, password: string) =>
+    fetcher<{ data: { token: string; user: any } }>('/auth/login', {
+      method: 'POST', body: JSON.stringify({ email, password }),
+    }),
+  me: (token: string) =>
+    fetcher<{ data: any }>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
+
+  // Registrasi pendaftaran
+  start: (token: string) =>
+    fetcher<{ data: any }>('/ppdb/start', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+  getMyRegistration: (token: string) =>
+    fetcher<{ data: any }>('/ppdb/my-registration', { headers: { Authorization: `Bearer ${token}` } }),
+  getMyResult: (token: string) =>
+    fetcher<{ data: any }>('/ppdb/my-result', { headers: { Authorization: `Bearer ${token}` } }),
+
+  // Tahap 1: Pembayaran
+  uploadPayment: (token: string, file: File, note?: string) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (note) fd.append('note', note);
+    return fetch(`${API_URL}/ppdb/payment/upload`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
+    }).then(r => r.json());
   },
-  getOne: (token: string, id: string) => 
-    fetcher<{ data: any }>(`/ppdb/registrations/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }),
-  updateStatus: (token: string, id: string, data: any) => 
-    fetcher(`/ppdb/registrations/${id}/status`, { 
-      method: 'PUT', 
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify(data) 
-    }),
-  // Submit pendaftaran baru tipe form data (tambah header user yang login jika dibutuhkan)
-  submitForm: async (token: string, formData: FormData) => {
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`; // Jika required nanti
-    
-    const res = await fetch(`${API_URL}/ppdb/register`, {
-      method: 'POST',
-      headers,
-      body: formData,
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gagal mengirim pendaftaran');
-    return data;
-  }
+
+  // Tahap 2: Formulir biodata
+  saveStudentForm: (token: string, data: any) =>
+    fetcher('/ppdb/form/student', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  saveParentForm: (token: string, data: any) =>
+    fetcher('/ppdb/form/parent-info', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  uploadDocuments: (token: string, files: Record<string, File>) => {
+    const fd = new FormData();
+    Object.entries(files).forEach(([key, file]) => fd.append(key, file));
+    return fetch(`${API_URL}/ppdb/form/documents`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
+    }).then(r => r.json());
+  },
+  submitForm: (token: string) =>
+    fetcher('/ppdb/form/submit', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+
+  // Tahap 3: Surat klinik
+  downloadReferralLetter: (token: string) =>
+    fetch(`${API_URL}/ppdb/referral-letter`, { headers: { Authorization: `Bearer ${token}` } }),
+  uploadClinicCert: (token: string, file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return fetch(`${API_URL}/ppdb/clinic-cert/upload`, {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd,
+    }).then(r => r.json());
+  },
+
+  // Tahap 4: Observasi
+  getAvailableSlots: (token: string) =>
+    fetcher<{ data: any[] }>('/ppdb/observation-slots', { headers: { Authorization: `Bearer ${token}` } }),
+  bookSlot: (token: string, slotId: string) =>
+    fetcher('/ppdb/observation-slots/book', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ slotId }) }),
+};
+
+// ─── PPDB ADMIN ───────────────────────────────────────────────
+export const ppdbAdminApi = {
+  // Dashboard
+  getStats: (token: string) =>
+    fetcher<{ data: any }>('/ppdb/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
+
+  // Registrasi
+  getAll: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: { data: any[]; pagination: any } }>(`/ppdb/admin/registrations${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getOne: (token: string, id: string) =>
+    fetcher<{ data: any }>(`/ppdb/admin/registrations/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+  reviewRegistration: (token: string, id: string, data: { result: string; note?: string }) =>
+    fetcher(`/ppdb/admin/registrations/${id}/review`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  recordObservation: (token: string, id: string, data: { result: string; note?: string }) =>
+    fetcher(`/ppdb/admin/registrations/${id}/observation`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  assignClass: (token: string, id: string, classroomId: string) =>
+    fetcher(`/ppdb/admin/registrations/${id}/assign-class`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ classroomId }) }),
+
+  // Verifikasi pembayaran
+  getPendingPayments: (token: string) =>
+    fetcher<{ data: any[] }>('/ppdb/admin/payments', { headers: { Authorization: `Bearer ${token}` } }),
+  verifyPayment: (token: string, id: string) =>
+    fetcher(`/ppdb/admin/payments/${id}/verify`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }),
+  rejectPayment: (token: string, id: string, reason: string) =>
+    fetcher(`/ppdb/admin/payments/${id}/reject`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ reason }) }),
+
+  // Slot observasi
+  getSlots: (token: string) =>
+    fetcher<{ data: any[] }>('/ppdb/admin/observation-slots', { headers: { Authorization: `Bearer ${token}` } }),
+  createSlot: (token: string, data: any) =>
+    fetcher('/ppdb/admin/observation-slots', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  updateSlot: (token: string, id: string, data: any) =>
+    fetcher(`/ppdb/admin/observation-slots/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  deleteSlot: (token: string, id: string) =>
+    fetcher(`/ppdb/admin/observation-slots/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+
+  // Kelas paralel
+  getClassrooms: (token: string) =>
+    fetcher<{ data: any[] }>('/ppdb/admin/classrooms', { headers: { Authorization: `Bearer ${token}` } }),
+  createClassroom: (token: string, data: any) =>
+    fetcher('/ppdb/admin/classrooms', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  updateClassroom: (token: string, id: string, data: any) =>
+    fetcher(`/ppdb/admin/classrooms/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  deleteClassroom: (token: string, id: string) =>
+    fetcher(`/ppdb/admin/classrooms/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };
 
 // ─── CMS Pages ────────────────────────────────────────────────

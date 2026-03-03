@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { academicYearsApi, registrationsApi } from '@/lib/api';
+import { academicYearsApi, ppdbAdminApi } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 
 export default function AdminPPDBPage() {
@@ -32,8 +32,8 @@ export default function AdminPPDBPage() {
     const token = getToken();
     try {
       if (activeTab === 'REGISTRATIONS') {
-        const res = await registrationsApi.getAll(token || '');
-        setRegistrations(res.data);
+        const res = await ppdbAdminApi.getAll(token || '');
+        setRegistrations(res.data?.data || []);
       } else {
         const res = await academicYearsApi.getAll(token || '');
         setAcademicYears(res.data);
@@ -92,7 +92,7 @@ export default function AdminPPDBPage() {
       reason = prompt('Alasan penolakan:') || 'Tidak memenuhi syarat';
     }
     try {
-      await registrationsApi.updateStatus(getToken() || '', id, { status, rejectReason: reason });
+      await ppdbAdminApi.reviewRegistration(getToken() || '', id, { result: status === 'ACCEPTED' ? 'ADMIN_PASSED' : 'REJECTED', note: reason });
       fetchData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Gagal mengubah status pendaftar.';

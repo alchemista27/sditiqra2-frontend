@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { academicYearsApi, registrationsApi } from '@/lib/api';
+import { academicYearsApi } from '@/lib/api';
 
 export default function PPDBPage() {
   const [activeYear, setActiveYear] = useState<any>(null);
@@ -64,7 +64,12 @@ export default function PPDBPage() {
       // Kita assign dummy parent di body untuk MVP ini, nanti parents perlu login mandiri (tahap lanjutan jika dibutuhkan)
       data.append('parentId', 'user-super-admin-id'); // Workaround sementara karena Portal Parent belum ada
 
-      await registrationsApi.submitForm('', data);
+      // Legacy form — portal baru ada di /ppdb/daftar
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/ppdb/form/submit`, {
+        method: 'POST', body: data,
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.message);
       setSuccessMsg('Pendaftaran berhasil disubmit! Silakan tunggu konfirmasi panitia.');
       
       // Reset form
