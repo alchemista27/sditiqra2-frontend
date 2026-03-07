@@ -1,32 +1,38 @@
-# Sistem Absensi GPS — Admin Dashboard (Frontend)
+# SDIT Iqra 2 Kota Bengkulu — Frontend Web & Admin Dashboard
 
-Sistem Informasi Manajemen Presensi dan Dashboard Admin berbasis antarmuka web interaktif untuk memantau performa kehadiran harian guru dan staf di SD Islam Terpadu Iqra 2 Kota Bengkulu.
+**Sistem Informasi Terpadu SD Islam Terpadu Iqra 2 Kota Bengkulu (Next.js Frontend)**
 
-Sistem ini terhubung langsung secara *real-time* dengan Core API Backend dan memberikan kontrol penuh kepada Kepala Sekolah serta tenaga administrasi (TU) untuk melihat grafik statistik mingguan maupun harian, mengelola persetujuan izin/cuti karyawan, mendefinisikan batas area radius lokasi absensi, serta mencatat daftar hari libur sekolah.
+Proyek ekosistem web modern raksasa yang mewadahi tiga sistem vital instansi sekolah: Situs Profil Publik (CMS), Portal Aplikasi Penerimaan Siswa Baru (PPDB), dan *Dashboard* Terpusat Administrator Kepegawaian (Sistem Absensi).
 
-## Fitur Utama
+## 🚀 Trilogi Sistem Frontend
 
-- **Pusat Rekapitulasi (Dashboard):** Visualisasi langsung berupa *Card* ringkasan yang menunjukkan berapa banyak orang yg tepat waktu, izin, maupun mangkir di hari ini. Menampilkan tabel guru-guru yang hadir.
-- **Geofencing Configurator:** Sebuah antarmuka kontrol pusat tempat Admin mendefinisikan koordinat persis letak titik pusat sekolah, toleransi jarak maksimal radius absen (dalam hitungan meter), hingga manajemen pembatasan rentang waktu batas "terlambat" (*Late Threshold*). 
-- **Verifikasi Izin/Cuti:** Sebuah *workspace* tempat persetujuan (*approval*). Admin menerima foto surat/bukti izin yang diunggah karyawan dari *mobile app*, memeriksa alasannya, lalu menekan tombol Setuju atau Tolak secara dinamis.
-- **Log Anomali Security:** Jika seorang karyawan terdeteksi melakukan penyimpangan keamanan aplikasi pendeteksi *Fake GPS Location* (mock GPS) melalui aplikasi HP-nya atau melakukan absensi di luar pagar/radius sekolah, namanya akan tertangkap basah di Log Inspeksi Anomali otomatis di dashboard admin ini.
-- **CRUD Hari Libur Kalender:** Kontrol *National Holiday* & Libur spesifik internal sekolah agar aplikasi guru/karyawan mengetahui tanggal merah otomatis.
-- **Ekspor Excel Canggih:** Generator instan Spreadsheet dengan 3 tab *sheet* lengkap per bulan yang menampilkan kalkulasi presensi total (hadir/terlambat), detail absen harian (tanggal 1-31), dan tab log peringatan inspeksi.
+Antarmuka web ini dikembangkan menggunakan **Next.js 14**, **Tailwind CSS**, dan berbagai komponen UI mutakhir dan terbagi dalam 3 pilar:
 
-## Stack Teknologi (Frontend Vercel Ready)
+### 1. Website Publik (Web CMS)
+Wajah digital instansi sekolah ke khalayak umum:
+- **Halaman Beranda:** Katalog berita terbaru, sambutan kepala sekolah, dan struktur organisasi.
+- **Portal Profil Sekolah:** Penyajian Visi, Misi, Sejarah, Kurikulum, dan informasi akademik secara statis dan dinamis.
+- **Papan Informasi:** Agenda dan liputan acara sekolah.
 
-- Framework Utama: Next.js (React Server Components minimal)
-- Desain & Styling: Tailwind CSS & Material Symbols Icons (Google Font)
-- Data Fetcher & Caching: Axios API Client terpisahkan
-- Modul Kalender: Input HTML5 asli terakselerasi
-- Navigasi: Sistem Tata Letak *Sidebar* modern yang ringkas
+### 2. Portal PPDB (Penerimaan Peserta Didik Baru)
+Jalur utama pendaftaran calon peserta didik secara swadaya:
+- **Alur Registrasi Interaktif:** Panduan pendaftaran tahap demi tahap yang ramah anak maupun wali murid.
+- **Dashboard Calon Siswa:** Laman pribadi di mana wali murid dapat melengkapi formulir biodata lengkap, melacak progres tes seleksi, *upload* file KK/Akta, dan melaporkan konfirmasi pelunasan bank.
+- **Sistem Cetak Kartu:** Auto-generasi nomer pendaftaran dan kartu ujian secara interaktif.
+- **Pengumuman Kelulusan:** Penyiaran hasil seleksi secara transparan pada tanggal yang ditentukan.
 
-## Setup Developer (Lokal)
+### 3. Dashboard Admin & Operator 
+Satu *super-dashboard* untuk mengelola seluruh aspek digital (CMS, PPDB, dan Absensi):
+- **Admin CMS:** Memiliki *Rich Text Editor* tertanam yang sanggup melahirkan posting berita blog, mengelola galeri, kategori, dan profil web umum tanpa *coding*.
+- **Admin PPDB:** Alat sortir untuk menyaring ribuan pendaftar, memvalidasi bukti tf pembayaran, meluluskan peserta, dan mengekspor rekapitulasi ke Dinas/Excel.
+- **Admin Absensi (Sinkron dengan Mobile App):** Pusat *monitoring* jam kerja pegawai GPS. Menampilkan peta radius toleransi *Geofencing* absensi, meja persetujuan izin/sakit elektronik, dan sensor rekam histori pelanggaran koordinat (*Mock Location*) mapun gagal *Face Recognition*. Dilengkapi ekspor Excel per-bulan harian lengkap dengan status *Late* (Terlambat) dan Alasan Absen.
 
-1. Syarat Utama: Sistem harus berjalan di node env v20-v24.
-2. Akses folder ini di monorepo: `cd apps/frontend`
-3. Ketik perintah wajib: `npm install`
-4. Jalankan *hot-reloading* environment: `npm run dev`
-5. Buka `http://localhost:3000` di *browser* Anda.
+## 💻 Panduan Menjalankan Frontend
 
-> Perhatian: Web ini secara bawaan (*default*) mengirim request AXIOS ke tautan `http://localhost:4000/api` sehingga Anda harus paralel menghidupkan repositori `sditiqra2-backend` terlebih dahulu agar tidak terjadi *infinite loading* pada pengambilan data grafik *dashboard*.
+1. Node.js minimal v20-v24 telah terinstal.
+2. Jelajahi folder ini di dalam monorepo: `cd apps/frontend`
+3. Pasang utilitas UI: `npm install`
+4. Jalankan mode interaktif (*hot-reloading*): `npm run dev`
+5. Aplikasi akan berjalan statis di *port* default `http://localhost:3000`.
+
+> **PERHATIAN INTEGRASI API:** Tanpa menghidupkan repositori *backend* (`sditiqra2-backend`), tampilan metrik dasbor admin akan terpapar memuat tanpa ujung (*infinite loading*), karena antarmuka ini murni mengkonsumsi data AXIOS internal dari `http://localhost:4000/api`.
