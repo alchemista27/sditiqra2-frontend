@@ -15,6 +15,11 @@ const navItems = [
   { href: '/admin/ppdb/observasi', icon: 'event_available', label: 'PPDB — Observasi' },
   { href: '/admin/ppdb/kelas', icon: 'meeting_room', label: 'PPDB — Kelas' },
   { href: '/admin/attendance', icon: 'how_to_reg', label: 'Kehadiran Staf' },
+  { href: '/admin/attendance/leaves', icon: 'event_busy', label: 'Pengajuan Izin' },
+  { href: '/admin/attendance/holidays', icon: 'calendar_month', label: 'Hari Libur' },
+  { href: '/admin/attendance/config', icon: 'my_location', label: 'Geofencing' },
+  { href: '/admin/attendance/reports', icon: 'download', label: 'Laporan Absensi' },
+  { href: '/admin/attendance/anomalies', icon: 'warning', label: 'Log Anomali' },
 ];
 
 const settingsItems = [

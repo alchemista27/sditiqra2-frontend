@@ -191,13 +191,69 @@ export const categoriesApi = {
     fetcher(`/cms/categories/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };
 
-// ─── KEHADIRAN (Attendance) ──────────────────────────────────
+// ─── KEHADIRAN (Attendance) — Enhanced GPS ───────────────────
 export const attendanceApi = {
-  clockIn: (token: string) => fetcher('/attendance/clock-in', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
-  clockOut: (token: string) => fetcher('/attendance/clock-out', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+  // Config
+  getConfig: (token: string) => fetcher<{ data: any }>('/attendance/config', { headers: { Authorization: `Bearer ${token}` } }),
+  updateConfig: (token: string, data: any) => fetcher('/attendance/config', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+
+  // Clock In/Out (GPS-based)
+  clockIn: (token: string, gpsData?: { latitude: number; longitude: number; isMockGps?: boolean; faceConfidence?: number; selfieUrl?: string }) =>
+    fetcher('/attendance/clock-in', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(gpsData || {}) }),
+  clockOut: (token: string, gpsData?: { latitude: number; longitude: number; isMockGps?: boolean; selfieUrl?: string }) =>
+    fetcher('/attendance/clock-out', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(gpsData || {}) }),
+
+  // Logs
   getMyLogs: (token: string, month: number, year: number) => fetcher<{ data: unknown[] }>(`/attendance/my-logs?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } }),
-  getTodayLogs: (token: string) => fetcher<{ data: unknown[] }>('/attendance/logs/today', { headers: { Authorization: `Bearer ${token}` } }),
+  getMyStatus: (token: string) => fetcher<{ data: any }>('/attendance/my-status', { headers: { Authorization: `Bearer ${token}` } }),
+  getTodayLogs: (token: string) => fetcher<{ data: { logs: any[]; stats: any } }>('/attendance/logs/today', { headers: { Authorization: `Bearer ${token}` } }),
+  getAllLogs: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: { logs: any[]; pagination: any } }>(`/attendance/logs${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getAnomalyLogs: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: { logs: any[]; pagination: any } }>(`/attendance/logs/anomalies${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
   getAllEmployees: (token: string) => fetcher<{ data: unknown[] }>('/attendance/employees', { headers: { Authorization: `Bearer ${token}` } }),
+};
+
+// ─── HARI LIBUR ──────────────────────────────────────────────
+export const holidayApi = {
+  getAll: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: any[] }>(`/holidays${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  create: (token: string, data: any) => fetcher('/holidays', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  update: (token: string, id: string, data: any) => fetcher(`/holidays/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  remove: (token: string, id: string) => fetcher(`/holidays/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+  checkDate: (token: string, date: string) => fetcher<{ data: any }>(`/holidays/check/${date}`, { headers: { Authorization: `Bearer ${token}` } }),
+  seedNational: (token: string, year: string) => fetcher(`/holidays/seed-national/${year}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+};
+
+// ─── PENGAJUAN IZIN ──────────────────────────────────────────
+export const leaveApi = {
+  create: (token: string, data: any) => fetcher('/leaves', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
+  getMyRequests: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: { requests: any[]; pagination: any } }>(`/leaves/my-requests${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getAll: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: { requests: any[]; pagination: any } }>(`/leaves${q}`, { headers: { Authorization: `Bearer ${token}` } });
+  },
+  getById: (token: string, id: string) => fetcher<{ data: any }>(`/leaves/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+  approve: (token: string, id: string, note?: string) => fetcher(`/leaves/${id}/approve`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ approverNote: note }) }),
+  reject: (token: string, id: string, note?: string) => fetcher(`/leaves/${id}/reject`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ approverNote: note }) }),
+};
+
+// ─── LAPORAN ─────────────────────────────────────────────────
+const API_URL_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+export const reportApi = {
+  getSummary: (token: string, month: number, year: number) =>
+    fetcher<{ data: any }>(`/reports/attendance/summary?month=${month}&year=${year}`, { headers: { Authorization: `Bearer ${token}` } }),
+  downloadExcelUrl: (month: number, year: number) =>
+    `${API_URL_BASE}/reports/attendance/excel?month=${month}&year=${year}`,
 };
 
 // ─── SITE SETTINGS ───────────────────────────────────────────
