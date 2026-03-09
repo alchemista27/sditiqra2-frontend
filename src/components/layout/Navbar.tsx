@@ -16,7 +16,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    // Ambil menu aktif + site settings paralel
     Promise.allSettled([
       menuApi.getAll(),
       settingsApi.getAll(),
@@ -39,6 +38,9 @@ export default function Navbar() {
   const logoSrc = logoUrl
     ? (logoUrl.startsWith('http') ? logoUrl : `${API_BASE}${logoUrl}`)
     : null;
+
+  // Hanya tampilkan root items (parentId = null)
+  const rootItems = menuItems.filter(m => !m.parentId);
 
   return (
     <header style={{
@@ -64,18 +66,24 @@ export default function Navbar() {
             }}>I2</div>
           )}
           <div>
-            <div style={{ fontWeight: 800, fontSize: 14, color: '#1B6B44', lineHeight: 1.2 }}>{siteName}</div>
-            <div style={{ fontSize: 11, color: '#4B5563', lineHeight: 1.2 }}>Kota Bengkulu</div>
+            <div style={{
+              fontWeight: 800, fontSize: 14, lineHeight: 1.2,
+              color: scrolled ? '#1B6B44' : '#fff',
+              textShadow: scrolled ? 'none' : '0 1px 4px rgba(0,0,0,0.4)',
+            }}>{siteName}</div>
+            <div style={{
+              fontSize: 11, lineHeight: 1.2,
+              color: scrolled ? '#4B5563' : 'rgba(255,255,255,0.8)',
+            }}>Kota Bengkulu</div>
           </div>
         </Link>
 
-        {/* Desktop Nav — dari menuApi */}
+        {/* Desktop Nav */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }} className="desktop-nav">
-          {menuItems.map(item => (
-            <NavLink key={item.id} href={item.url} external={item.openInNewTab}>
-              {item.label}
-            </NavLink>
-          ))}
+          {rootItems.map(item => {
+            const subItems = menuItems.filter(m => m.parentId === item.id);
+            return <NavItem key={item.id} item={item} subItems={subItems} scrolled={scrolled} />;
+          })}
           <Link href="/ppdb" style={{
             marginLeft: '0.5rem', padding: '0.5rem 1.25rem',
             background: 'linear-gradient(135deg, #1B6B44, #2D9164)',
@@ -86,7 +94,7 @@ export default function Navbar() {
 
         {/* Mobile burger */}
         <button onClick={() => setOpen(!open)}
-          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: '#1B6B44' }}
+          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: scrolled ? '#1B6B44' : '#fff' }}
           className="burger-btn" aria-label="Menu">
           {open ? '✕' : '☰'}
         </button>
@@ -95,7 +103,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {open && (
         <div style={{ background: '#fff', borderTop: '1px solid #E5E7EB', padding: '1rem 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {menuItems.map(item => (
+          {rootItems.map(item => (
             <MobileLink key={item.id} href={item.url} onClick={() => setOpen(false)} external={item.openInNewTab}>
               {item.label}
             </MobileLink>
@@ -108,20 +116,47 @@ export default function Navbar() {
 
       <style>{`
         @media (max-width: 768px) { .desktop-nav { display: none !important; } .burger-btn { display: block !important; } }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-menu { display: none; position: absolute; top: calc(100% + 8px); left: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); border: 1px solid #E5E7EB; padding: 0.5rem; min-width: 180px; z-index: 200; }
+        .nav-dropdown:hover .nav-dropdown-menu { display: block; animation: fadeDown 0.15s ease; }
+        @keyframes fadeDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-dropdown-item { display: block; padding: 0.5rem 0.75rem; color: #374151; font-size: 13.5px; font-weight: 500; text-decoration: none; border-radius: 8px; white-space: nowrap; }
+        .nav-dropdown-item:hover { background: #E8F5EE; color: #1B6B44; }
       `}</style>
     </header>
   );
 }
 
-function NavLink({ href, children, external }: { href: string; children: React.ReactNode; external?: boolean }) {
+function NavItem({ item, subItems, scrolled }: { item: MenuItem; subItems: MenuItem[]; scrolled: boolean }) {
+  const textColor = scrolled ? '#374151' : '#fff';
+  const textShadow = scrolled ? 'none' : '0 1px 3px rgba(0,0,0,0.45)';
+
+  if (subItems.length > 0) {
+    return (
+      <div className="nav-dropdown">
+        <Link href={item.url} target={item.openInNewTab ? '_blank' : undefined}
+          style={{ padding: '0.4rem 0.85rem', color: textColor, fontSize: 14, fontWeight: 500, textDecoration: 'none', borderRadius: 8, display: 'flex', alignItems: 'center', gap: '0.3rem', textShadow }}>
+          {item.label} <span style={{ fontSize: 11 }}>▾</span>
+        </Link>
+        <div className="nav-dropdown-menu">
+          {subItems.map(child => (
+            <a key={child.id} href={child.url} target={child.openInNewTab ? '_blank' : undefined} className="nav-dropdown-item">
+              {child.label}
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Link href={href}
-      target={external ? '_blank' : undefined}
-      rel={external ? 'noopener noreferrer' : undefined}
-      style={{ padding: '0.4rem 0.85rem', color: '#374151', fontSize: 14, fontWeight: 500, textDecoration: 'none', borderRadius: 8, transition: 'background 0.2s' }}
-      onMouseEnter={e => (e.currentTarget.style.background = '#E8F5EE')}
+    <Link href={item.url}
+      target={item.openInNewTab ? '_blank' : undefined}
+      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+      style={{ padding: '0.4rem 0.85rem', color: textColor, fontSize: 14, fontWeight: 500, textDecoration: 'none', borderRadius: 8, transition: 'background 0.2s', textShadow }}
+      onMouseEnter={e => (e.currentTarget.style.background = scrolled ? '#E8F5EE' : 'rgba(255,255,255,0.15)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-      {children}
+      {item.label}
     </Link>
   );
 }

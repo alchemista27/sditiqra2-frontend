@@ -76,7 +76,9 @@ export default function AnomaliesPage() {
       ) : logs.length === 0 ? (
         <div style={{ padding: '3rem', textAlign: 'center', background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB' }}>
           <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#34D399', display: 'block', marginBottom: '0.5rem' }}>verified</span>
-          <p style={{ color: '#065F46', fontWeight: 600 }}>Tidak ada anomali ditemukan! 🎉</p>
+          <p style={{ color: '#065F46', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            Tidak ada anomali ditemukan! <span className="material-symbols-outlined" style={{ fontSize: 20 }}>celebration</span>
+          </p>
           <p style={{ fontSize: 12, color: '#6B7280' }}>Semua absensi pada bulan ini berjalan normal</p>
         </div>
       ) : (

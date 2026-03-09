@@ -59,8 +59,8 @@ export default function ReportsPage() {
               {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
-          <button onClick={fetchSummary} disabled={loading} style={{ padding: '0.65rem 1.25rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-            {loading ? 'Memuat...' : '📊 Tampilkan Preview'}
+          <button onClick={fetchSummary} disabled={loading} style={{ padding: '0.65rem 1.25rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>bar_chart</span> {loading ? 'Memuat...' : 'Tampilkan Preview'}
           </button>
           <button onClick={handleDownload} disabled={downloading} style={{ padding: '0.65rem 1.25rem', background: '#065F46', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span>

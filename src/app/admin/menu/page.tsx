@@ -1,91 +1,161 @@
-'use client';
 // src/app/admin/menu/page.tsx
-// Editor Menu Navigasi ala WordPress — drag to reorder, add/edit/delete items
-import { useEffect, useRef, useState, useCallback } from 'react';
+'use client';
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragMoveEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { menuApi } from '@/lib/api';
-import type { MenuItem } from '@/lib/api';
-import { getToken } from '@/lib/auth';
 
-// ─── Helper: Reorder array setelah drag ──────────────────────
-function reorderList<T>(list: T[], from: number, to: number): T[] {
-  const result = [...list];
-  const [moved] = result.splice(from, 1);
-  result.splice(to, 0, moved);
-  return result;
+// Expanded type to handle parent/children in UI
+export interface MenuItem {
+  id: string;
+  label: string;
+  url: string;
+  order: number;
+  isActive: boolean;
+  openInNewTab: boolean;
+  parentId: string | null;
+  children?: MenuItem[];
 }
 
-// ─── Komponen Item Draggable ──────────────────────────────────
-function MenuItemRow({
-  item, index, onEdit, onDelete, onDragStart, onDragOver, onDrop, dragging,
-}: {
-  item: MenuItem; index: number;
+// Flattened item for dnd-kit representation
+interface FlattenedItem extends MenuItem {
+  parentId: string | null;
+  depth: number;
+  index: number;
+}
+
+// ─── Helpers ─────────────────────────────────────
+function flattenTree(items: MenuItem[], parentId: string | null = null, depth = 0): FlattenedItem[] {
+  return items.reduce<FlattenedItem[]>((acc, item, index) => {
+    return [
+      ...acc,
+      { ...item, parentId, depth, index },
+      ...flattenTree(item.children || [], item.id, depth + 1),
+    ];
+  }, []);
+}
+
+function buildTree(flattenedItems: FlattenedItem[]): MenuItem[] {
+  const rootItems: MenuItem[] = [];
+  const lookup: Record<string, MenuItem> = {};
+
+  for (const item of flattenedItems) {
+    lookup[item.id] = { ...item, children: [] };
+  }
+
+  for (const item of flattenedItems) {
+    if (item.parentId && lookup[item.parentId]) {
+      lookup[item.parentId].children!.push(lookup[item.id]);
+    } else {
+      rootItems.push(lookup[item.id]);
+    }
+  }
+
+  return rootItems;
+}
+
+function getDragDepth(offset: number, indentationWidth: number) {
+  return Math.round(offset / indentationWidth);
+}
+
+// ─── Sortable Item Component ───────────────────────
+function SortableMenuItem({ 
+  item, 
+  onEdit, 
+  onDelete 
+}: { 
+  item: FlattenedItem;
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
-  onDragStart: (index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDrop: () => void;
-  dragging: boolean;
 }) {
+  const {
+    attributes,
+    listeners,
+    setDraggableNodeRef,
+    setDroppableNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    paddingLeft: `${item.depth * 2}rem`, // Indentation based on depth
+  };
+
   return (
     <div
-      draggable
-      onDragStart={() => onDragStart(index)}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDrop={onDrop}
-      style={{
-        display: 'flex', alignItems: 'center', gap: '0.75rem',
-        padding: '0.875rem 1rem',
-        background: dragging ? '#F0FDF4' : '#fff',
-        border: '1.5px solid',
-        borderColor: dragging ? '#1B6B44' : '#E5E7EB',
-        borderRadius: 12, marginBottom: '0.5rem',
-        cursor: 'grab', transition: 'all 0.15s',
-        boxShadow: dragging ? '0 4px 20px rgba(27,107,68,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
-        opacity: dragging ? 0.8 : 1,
-      }}
+      ref={setDroppableNodeRef}
+      style={style}
+      className={`relative mb-2 ${isDragging ? 'opacity-50 z-50' : ''}`}
     >
-      {/* Drag Handle */}
-      <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#9CA3AF', cursor: 'grab', flexShrink: 0 }}>drag_indicator</span>
+      <div 
+        ref={setDraggableNodeRef}
+        className={`flex items-center gap-3 p-3 bg-white border-2 rounded-xl transition-all ${isDragging ? 'border-green-700 shadow-xl' : 'border-gray-200 shadow-sm'}`}
+        style={{ padding: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}
+      >
+        {/* Drag Handle */}
+        <button 
+          {...attributes} 
+          {...listeners} 
+          className="p-1 cursor-grab text-gray-400 hover:text-gray-600 rounded"
+        >
+          <span className="material-symbols-outlined text-xl pointer-events-none">drag_indicator</span>
+        </button>
 
-      {/* Order badge */}
-      <div style={{ width: 28, height: 28, background: '#F3F4F6', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#6B7280', flexShrink: 0 }}>
-        {index + 1}
-      </div>
-
-      {/* Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: '#111827', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {item.label}
-          {item.openInNewTab && (
-            <span style={{ fontSize: 10, background: '#E0F2FE', color: '#0369A1', padding: '0.1rem 0.4rem', borderRadius: 4, fontWeight: 600 }}>NEW TAB</span>
-          )}
-          {!item.isActive && (
-            <span style={{ fontSize: 10, background: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.4rem', borderRadius: 4, fontWeight: 600 }}>NONAKTIF</span>
-          )}
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 font-semibold text-sm text-gray-900">
+            {item.label}
+            {item.openInNewTab && (
+              <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-bold">NEW TAB</span>
+            )}
+            {!item.isActive && (
+              <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">NONAKTIF</span>
+            )}
+          </div>
+          <div className="text-xs text-gray-500 font-mono mt-0.5">{item.url}</div>
         </div>
-        <div style={{ fontSize: 12, color: '#6B7280', marginTop: '0.1rem', fontFamily: 'monospace' }}>{item.url}</div>
-      </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-        <button onClick={() => onEdit(item)}
-          style={{ padding: '0.35rem 0.7rem', background: '#E8F5EE', color: '#1B6B44', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 15 }}>edit</span>
-        </button>
-        <button onClick={() => onDelete(item.id)}
-          style={{ padding: '0.35rem 0.7rem', background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 15 }}>delete</span>
-        </button>
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button onClick={() => onEdit(item)} className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors" style={{ padding: '6px', backgroundColor: '#F0FDF4' }}>
+            <span className="material-symbols-outlined text-[18px]">edit</span>
+          </button>
+          <button onClick={() => onDelete(item.id)} className="p-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" style={{ padding: '6px', backgroundColor: '#FEF2F2' }}>
+            <span className="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Modal Form Tambah/Edit ───────────────────────────────────
+// ─── Modal Form Tambah/Edit ────────────────────────
 function MenuItemForm({
   initial, onSave, onClose, saving,
 }: {
-  initial?: MenuItem | null;
+  initial: FlattenedItem | null;
   onSave: (data: Partial<MenuItem>) => void;
   onClose: () => void;
   saving: boolean;
@@ -98,13 +168,13 @@ function MenuItemForm({
   const inputStyle = { width: '100%', padding: '0.7rem 1rem', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' as const };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 300, padding: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
       <div style={{ background: '#fff', borderRadius: 20, padding: '2rem', width: '100%', maxWidth: 480 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h3 style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{initial ? 'Edit Item Menu' : 'Tambah Item Menu'}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#6B7280' }}>✕</button>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); onSave({ label, url, isActive, openInNewTab }); }}
+        <form onSubmit={(e) => { e.preventDefault(); onSave({ label, url, isActive, openInNewTab, parentId: initial?.parentId }); }}
           style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
           <div>
@@ -165,77 +235,184 @@ function MenuItemForm({
   );
 }
 
-// ─── Halaman Utama Menu Editor ────────────────────────────────
+// ─── Main Page ───────────────────────────────────────
 export default function AdminMenuPage() {
-  const [items, setItems] = useState<MenuItem[]>([]);
+  const [rawItems, setRawItems] = useState<MenuItem[]>([]);
+  const [flattenedItems, setFlattenedItems] = useState<FlattenedItem[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [offsetLeft, setOffsetLeft] = useState(0);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [reordered, setReordered] = useState(false);
+  
   const [showForm, setShowForm] = useState(false);
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingItem, setEditingItem] = useState<FlattenedItem | null>(null);
   const [toast, setToast] = useState('');
-  const dragFrom = useRef<number>(-1);
-  const dragTo = useRef<number>(-1);
-  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+
+  const indentationWidth = 32; // 2rem
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const showToast = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(''), 2500);
+    setTimeout(() => setToast(''), 3000);
   };
 
-  const fetchMenu = useCallback(async () => {
-    setLoading(true);
+  const fetchMenu = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
+      // Backend should return nested (children) by default
       const r = await menuApi.getAll();
-      setItems(r.data);
-    } catch { /* ignore */ }
+      setRawItems(r.data);
+      setFlattenedItems(flattenTree(r.data));
+    } catch {
+      showToast('❌ Gagal memuat data menu');
+    }
     setLoading(false);
+  };
+
+  useEffect(() => {
+    menuApi.getAll()
+      .then(r => {
+        setRawItems(r.data);
+        setFlattenedItems(flattenTree(r.data));
+        setLoading(false);
+      })
+      .catch(() => {
+        showToast('❌ Gagal memuat data menu');
+        setLoading(false);
+      });
   }, []);
 
-  useEffect(() => { fetchMenu(); }, [fetchMenu]);
+  // Compute active item for drag overlay
+  const activeItem = useMemo(
+    () => flattenedItems.find(({ id }) => id === activeId),
+    [activeId, flattenedItems]
+  );
 
-  // ── Drag handlers ─────────────────────────────────────────
-  const handleDragStart = (index: number) => {
-    dragFrom.current = index;
-    setDraggingIdx(index);
-  };
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    dragTo.current = index;
-  };
-  const handleDrop = () => {
-    if (dragFrom.current === dragTo.current) { setDraggingIdx(null); return; }
-    const reordered = reorderList(items, dragFrom.current, dragTo.current);
-    setItems(reordered);
-    setDraggingIdx(null);
-    setReordered(true);
-  };
+  // ── Drag & Drop Handlers ──
+  function handleDragStart({ active }: DragStartEvent) {
+    setActiveId(active.id as string);
+    setOverId(active.id as string);
 
-  // ── Save reorder ke backend ───────────────────────────────
+    // Calculate initial depth based on current state to snap correctly
+    const item = flattenedItems.find((i) => i.id === active.id);
+    if (item) setOffsetLeft(item.depth * indentationWidth);
+  }
+
+  function handleDragMove({ delta, over }: DragMoveEvent) {
+    setOffsetLeft(delta.x);
+    if (over) setOverId(over.id as string);
+  }
+
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    setActiveId(null);
+    setOverId(null);
+    setOffsetLeft(0);
+
+    if (over && active.id !== over.id) {
+      const activeIndex = flattenedItems.findIndex(({ id }) => id === active.id);
+      const overIndex = flattenedItems.findIndex(({ id }) => id === over.id);
+
+      // Determine new depth and parent
+      const activeItem = flattenedItems[activeIndex];
+      const getNewDepth = () => {
+         const dragDepth = getDragDepth(offsetLeft, indentationWidth);
+         const minDepth = 0;
+         const maxDepth = overIndex > 0 ? flattenedItems[overIndex - 1].depth + 1 : 0;
+         return Math.max(minDepth, Math.min(dragDepth + activeItem.depth, maxDepth));
+      }
+
+      const newDepth = getNewDepth();
+      let parentId: string | null = null;
+      
+      // Look back to find the parent at newDepth - 1
+      for (let i = overIndex; i >= 0; i--) {
+        if (flattenedItems[i].depth === newDepth - 1) {
+            parentId = flattenedItems[i].id;
+            break;
+        }
+      }
+
+      const newItems = arrayMove(flattenedItems, activeIndex, overIndex);
+      const updatedItems = newItems.map((item, idx) => {
+        if (item.id === active.id) {
+            return { ...item, depth: newDepth, parentId };
+        }
+        // Force siblings update logic can go here, simplified for display:
+        return item;
+      });
+
+      // Quick re-flatten to fix depths downwards based on parent, 
+      // easiest way is to build tree then reflatten
+      const reFlatten = flattenTree(buildTree(updatedItems));
+      
+      setFlattenedItems(reFlatten);
+      setReordered(true);
+    }
+  }
+
+  function handleDragCancel() {
+    setActiveId(null);
+    setOverId(null);
+    setOffsetLeft(0);
+  }
+
+  // ── Save Actions ──
   const handleSaveOrder = async () => {
     setSaving(true);
     try {
-      const token = getToken()!;
-      const payload = items.map((item, i) => ({ id: item.id, order: i }));
-      await menuApi.reorder(token, payload);
+      const token = localStorage.getItem('token');
+      // Format payload for backend API
+      const payload = flattenedItems.map((item, i) => ({ 
+          id: item.id, 
+          order: i,
+          parentId: item.parentId 
+      }));
+      
+      await fetch(process.env.NEXT_PUBLIC_API_URL + '/cms/menu/reorder', {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ items: payload })
+      });
+
       setReordered(false);
-      showToast('✅ Urutan menu berhasil disimpan.');
+      showToast('✅ Urutan menu hierarki berhasil disimpan.');
+      await fetchMenu();
     } catch {
       showToast('❌ Gagal menyimpan urutan.');
     }
     setSaving(false);
   };
 
-  // ── Tambah / Edit ─────────────────────────────────────────
   const handleSaveItem = async (data: Partial<MenuItem>) => {
     setSaving(true);
     try {
-      const token = getToken()!;
-      if (editingItem) {
-        await menuApi.update(token, editingItem.id, data);
+      const token = localStorage.getItem('token');
+      
+      if (editingItem && editingItem.id) {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cms/menu/${editingItem.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
         showToast('✅ Item berhasil diperbarui.');
       } else {
-        await menuApi.create(token, data);
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cms/menu`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
         showToast('✅ Item berhasil ditambahkan.');
       }
       setShowForm(false);
@@ -248,9 +425,13 @@ export default function AdminMenuPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Hapus item menu ini?')) return;
+    if (!confirm('Hapus item menu ini? Semua submenu (jika ada) juga akan menjadi yatim/terhapus.')) return;
     try {
-      await menuApi.remove(getToken()!, id);
+      const token = localStorage.getItem('token');
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cms/menu/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` },
+      });
       showToast('✅ Item dihapus.');
       await fetchMenu();
     } catch {
@@ -259,95 +440,91 @@ export default function AdminMenuPage() {
   };
 
   return (
-    <div>
-      {/* ─── Header ─────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="p-8 lg:p-12">
+      <div className="max-w-4xl mx-auto max-h-screen overflow-y-auto pb-32">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-8 flex-wrap gap-4">
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: '0.25rem' }}>Menu Navigasi</h1>
-          <p style={{ fontSize: 14, color: '#6B7280', margin: 0 }}>Drag &amp; drop untuk mengubah urutan. Perubahan urutan disimpan setelah klik &quot;Simpan Urutan&quot;.</p>
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Menu Navigasi Publik</h1>
+          <p className="text-sm text-gray-500">
+            Geser urutan ke atas/bawah. <strong className="text-gray-800">Geser ke kanan</strong> untuk membuat item menjadi Submenu.
+          </p>
         </div>
-        <button onClick={() => { setEditingItem(null); setShowForm(true); }}
-          style={{ padding: '0.65rem 1.25rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span> Tambah Item
+        <button 
+          onClick={() => { setEditingItem(null); setShowForm(true); }}
+          className="px-5 py-2.5 bg-[#1B6B44] text-white rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-[#0F3D24] transition-colors"
+          style={{ padding: '10px 20px', borderRadius: '12px' }}
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span> Tambah Item
         </button>
       </div>
 
-      {/* ─── Toast ──────────────────────────────────────── */}
-      {toast && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', background: '#111827', color: '#fff', padding: '0.75rem 1.25rem', borderRadius: 12, fontSize: 14, zIndex: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.2)', animation: 'fadeIn 0.2s ease' }}>
-          {toast}
-        </div>
-      )}
-
-      {/* ─── Preview Navbar ─────────────────────────────── */}
-      <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '1.25rem', marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>Preview Navbar Publik</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: '#0F3D24', padding: '0.75rem 1.25rem', borderRadius: 10, flexWrap: 'wrap' }}>
-          <div style={{ fontWeight: 800, color: '#fff', fontSize: 14 }}>SD IT Iqra 2</div>
-          <div style={{ display: 'flex', gap: '0.25rem', flex: 1, flexWrap: 'wrap' }}>
-            {items.filter(m => m.isActive).map(m => (
-              <span key={m.id} style={{ padding: '0.3rem 0.75rem', color: 'rgba(255,255,255,0.85)', fontSize: 13, borderRadius: 6, background: 'rgba(255,255,255,0.08)' }}>
-                {m.label}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Save Order Bar ─────────────────────────────── */}
+      {/* Save Reorder Warning */}
       {reordered && (
-        <div style={{ background: '#FFF7ED', border: '1.5px solid #FED7AA', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 14, color: '#92400E', fontWeight: 500 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>warning</span>
-            Urutan menu telah berubah. Klik &quot;Simpan Urutan&quot; untuk menerapkan.
+        <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 flex-wrap shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-orange-800 font-medium">
+            <span className="material-symbols-outlined text-[20px]">warning</span>
+            Tata letak menu telah diubah secara lokal. Klik tombol simpan.
           </div>
-          <button onClick={handleSaveOrder} disabled={saving}
-            style={{ padding: '0.55rem 1.25rem', background: '#F97316', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{saving ? 'sync' : 'save'}</span>
-            {saving ? 'Menyimpan...' : 'Simpan Urutan'}
+          <button 
+            onClick={handleSaveOrder} 
+            disabled={saving}
+            className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]">{saving ? 'sync' : 'save'}</span>
+            {saving ? 'Loading...' : 'Simpan Hierarki'}
           </button>
         </div>
       )}
 
-      {/* ─── Daftar Menu Items ──────────────────────────── */}
-      <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 16, padding: '1.25rem' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-          {items.length} Item Menu {items.filter(m => !m.isActive).length > 0 && `(${items.filter(m => !m.isActive).length} nonaktif)`}
-        </div>
-
+      {/* Editor List */}
+      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-inner min-h-[500px]">
         {loading ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#9CA3AF' }}>Memuat menu...</div>
-        ) : items.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: '#9CA3AF' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 48, display: 'block', marginBottom: '0.75rem', opacity: 0.4 }}>menu</span>
-            Belum ada item menu. Tambahkan item pertama.
+          <div className="py-12 text-center text-gray-400 font-medium animate-pulse">Menyiapkan editor hirarki...</div>
+        ) : flattenedItems.length === 0 ? (
+          <div className="py-16 text-center text-gray-400">
+            <span className="material-symbols-outlined text-5xl mb-3 opacity-30 block">menu_book</span>
+            Belum ada menu satupun.
           </div>
         ) : (
-          <div>
-            {items.map((item, index) => (
-              <MenuItemRow
-                key={item.id} item={item} index={index}
-                onEdit={(i) => { setEditingItem(i); setShowForm(true); }}
-                onDelete={handleDelete}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                dragging={draggingIdx === index}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragMove={handleDragMove}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <SortableContext
+              items={flattenedItems.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {flattenedItems.map((item) => (
+                <SortableMenuItem
+                  key={item.id}
+                  item={item}
+                  onEdit={(i) => { setEditingItem(i as FlattenedItem); setShowForm(true); }}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </SortableContext>
+
+            {/* Drag Overlay visual for mouse trailing */}
+            <DragOverlay>
+              {activeId && activeItem ? (
+                <div style={{ paddingLeft: `${activeItem.depth * 2}rem` }}>
+                    <div className="flex items-center gap-3 p-3 bg-white border-2 border-green-700 rounded-xl shadow-2xl opacity-90 scale-105">
+                        <span className="material-symbols-outlined text-xl text-green-700">drag_indicator</span>
+                        <div className="flex-1 font-semibold text-sm text-gray-900">{activeItem.label}</div>
+                    </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </div>
 
-      {/* ─── Info Box ───────────────────────────────────── */}
-      <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, padding: '1rem 1.25rem', marginTop: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-        <span className="material-symbols-outlined" style={{ fontSize: 20, color: '#3B82F6', flexShrink: 0, marginTop: '0.1rem' }}>info</span>
-        <div style={{ fontSize: 13, color: '#1E40AF', lineHeight: 1.6 }}>
-          <strong>Cara menggunakan:</strong> Drag item ke atas/bawah untuk mengurutkan, lalu klik <strong>Simpan Urutan</strong>. Item yang dinonaktifkan tidak akan muncul di navbar publik tapi tetap tersimpan.
-        </div>
-      </div>
-
-      {/* ─── Form Modal ─────────────────────────────────── */}
+      {/* Form Modal */}
       {showForm && (
         <MenuItemForm
           initial={editingItem}
@@ -357,7 +534,13 @@ export default function AdminMenuPage() {
         />
       )}
 
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl z-[9999] animate-bounce font-medium text-sm">
+          {toast}
+        </div>
+      )}
+    </div>
     </div>
   );
 }

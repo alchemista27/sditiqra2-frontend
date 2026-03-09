@@ -23,7 +23,7 @@ async function fetcher<T>(path: string, options?: RequestInit): Promise<T> {
 // ─── AUTH ─────────────────────────────────────────────────────
 export const authApi = {
   login: (email: string, password: string) =>
-    fetcher<{ data: { token: string; user: any } }>('/auth/login', {
+    fetcher<{ data: { token: string; user: Record<string, unknown> } }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
@@ -282,6 +282,8 @@ export interface MenuItem {
   order: number;
   isActive: boolean;
   openInNewTab: boolean;
+  parentId: string | null;
+  children?: MenuItem[];
 }
 
 export const menuApi = {
@@ -295,3 +297,77 @@ export const menuApi = {
   reorder: (token: string, items: { id: string; order: number }[]) =>
     fetcher('/cms/menu/reorder', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ items }) }),
 };
+
+// ─── GALLERY ─────────────────────────────────────────────────
+export interface GalleryItem {
+  id: string;
+  title: string;
+  description?: string;
+  imageUrl: string;
+  cloudinaryId?: string;
+  order: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export const galleryApi = {
+  getAll: () => fetcher<{ data: GalleryItem[] }>('/cms/gallery'),
+  create: (token: string, formData: FormData) =>
+    fetch(`${API_URL}/cms/gallery`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    }).then(r => r.json()),
+  update: (token: string, id: string, formData: FormData) =>
+    fetch(`${API_URL}/cms/gallery/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    }).then(r => r.json()),
+  reorder: (token: string, items: { id: string; order: number }[]) =>
+    fetcher('/cms/gallery/reorder', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify({ items }) }),
+  remove: (token: string, id: string) =>
+    fetcher(`/cms/gallery/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+};
+
+// ─── MEDIA LIBRARY (Cloudinary) ──────────────────────────────
+export interface CloudinaryMedia {
+  publicId: string;
+  url: string;
+  format: string;
+  width?: number;
+  height?: number;
+  bytes: number;
+  createdAt: string;
+  folder?: string;
+  displayName?: string;
+}
+
+export const mediaApi = {
+  getAll: (token: string, params?: Record<string, string>) => {
+    const q = params ? '?' + new URLSearchParams(params).toString() : '';
+    return fetcher<{ data: CloudinaryMedia[]; nextCursor?: string; totalCount?: number }>(`/cms/media${q}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  getFolders: (token: string) =>
+    fetcher<{ data: Array<{ name: string; path: string }> }>('/cms/media/folders', {
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  upload: (token: string, file: File, folder?: string) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (folder) fd.append('folder', folder);
+    return fetch(`${API_URL}/cms/media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    }).then(r => r.json());
+  },
+  remove: (token: string, publicId: string) =>
+    fetcher(`/cms/media?id=${encodeURIComponent(publicId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+};
+

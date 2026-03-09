@@ -2,6 +2,7 @@
 // ISR: Revalidate setiap 60 detik agar perubahan settings & berita cepat tampil
 import Link from 'next/link';
 import { postsApi, settingsApi } from '@/lib/api';
+import GallerySlideshow from '@/components/GallerySlideshow';
 
 export const revalidate = 60; // ISR: regenerate setiap 60 detik
 
@@ -88,7 +89,8 @@ export default async function HomePage() {
                 padding: '0.875rem 2rem', background: 'linear-gradient(135deg, #C9A84C, #F2D98A)',
                 color: '#0F3D24', borderRadius: 50, fontWeight: 700, fontSize: 15,
                 textDecoration: 'none', boxShadow: '0 4px 20px rgba(201,168,76,0.4)',
-              }}>🎓 {ctaPrimaryText}</Link>
+                display: 'flex', alignItems: 'center', gap: '0.5rem'
+              }}><span className="material-symbols-outlined" style={{ fontSize: 20 }}>school</span> {ctaPrimaryText}</Link>
               <Link href={ctaSecondaryUrl} style={{
                 padding: '0.875rem 2rem', background: 'rgba(255,255,255,0.1)',
                 border: '1px solid rgba(255,255,255,0.3)', color: '#fff',
@@ -117,12 +119,24 @@ export default async function HomePage() {
         <style>{`@media (max-width: 768px) { section > div > div:last-child { display: none !important; } section > div { grid-template-columns: 1fr !important; } }`}</style>
       </section>
 
+      {/* ─── GALLERY SLIDESHOW ──────────────────────────────── */}
+      <section style={{ padding: '5rem 1.5rem', background: '#F9FAFB' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: '#E8F5EE', color: '#1B6B44', padding: '0.35rem 1rem', borderRadius: 30, fontSize: 13, fontWeight: 600, marginBottom: '0.75rem', width: 'fit-content', margin: '0 auto 0.75rem' }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>photo_camera</span> Galeri Sekolah</div>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#111827', margin: '0 0 0.75rem' }}>Momen Kebersamaan</h2>
+            <p style={{ color: '#6B7280', maxWidth: 500, margin: '0 auto' }}>Potret kegiatan belajar mengajar dan aktivitas unggulan di lingkungan sekolah kami.</p>
+          </div>
+          <GallerySlideshow />
+        </div>
+      </section>
+
       {/* ─── FITUR UNGGULAN ─────────────────────────────────── */}
       {features.length > 0 && (
         <section style={{ padding: '5rem 1.5rem', background: '#fff' }}>
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-              <div style={{ display: 'inline-block', background: '#E8F5EE', color: '#1B6B44', padding: '0.35rem 1rem', borderRadius: 30, fontSize: 13, fontWeight: 600, marginBottom: '0.75rem' }}>⭐ Keunggulan Kami</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: '#E8F5EE', color: '#1B6B44', padding: '0.35rem 1rem', borderRadius: 30, fontSize: 13, fontWeight: 600, marginBottom: '0.75rem', width: 'fit-content', margin: '0 auto 0.75rem' }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>star</span> Keunggulan Kami</div>
               <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#111827', margin: '0 0 0.75rem' }}>Mengapa Memilih Kami?</h2>
               <p style={{ color: '#6B7280', maxWidth: 500, margin: '0 auto' }}>Kami berkomitmen memberikan pendidikan berkualitas tinggi yang terintegrasi dengan nilai-nilai Islam.</p>
             </div>
@@ -149,7 +163,7 @@ export default async function HomePage() {
       <section style={{ padding: '5rem 1.5rem', background: '#F9FAFB' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-            <div style={{ display: 'inline-block', background: '#E8F5EE', color: '#1B6B44', padding: '0.35rem 1rem', borderRadius: 30, fontSize: 13, fontWeight: 600, marginBottom: '0.75rem' }}>📰 Informasi Terkini</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', background: '#E8F5EE', color: '#1B6B44', padding: '0.35rem 1rem', borderRadius: 30, fontSize: 13, fontWeight: 600, marginBottom: '0.75rem', width: 'fit-content', margin: '0 auto 0.75rem' }}><span className="material-symbols-outlined" style={{ fontSize: 18 }}>newspaper</span> Informasi Terkini</div>
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#111827', margin: '0 0 0.75rem' }}>Berita &amp; Pengumuman</h2>
             <p style={{ color: '#6B7280', maxWidth: 500, margin: '0 auto' }}>Ikuti perkembangan terbaru kegiatan dan informasi penting dari sekolah kami.</p>
           </div>
@@ -168,7 +182,7 @@ export default async function HomePage() {
                       {post.coverImage
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={`${API_BASE}${post.coverImage}`} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : '📰'}
+                        : <span className="material-symbols-outlined" style={{ fontSize: 48, color: 'rgba(255,255,255,0.8)' }}>article</span>}
                     </div>
                     <div style={{ padding: '1.25rem' }}>
                       {post.category && (
@@ -204,7 +218,7 @@ export default async function HomePage() {
         color: '#fff', padding: '5rem 1.5rem', textAlign: 'center',
       }}>
         <div style={{ maxWidth: 650, margin: '0 auto' }}>
-          <div style={{ fontSize: 48, marginBottom: '1rem' }}>🎓</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}><span className="material-symbols-outlined" style={{ fontSize: 56, color: '#F2D98A' }}>school</span></div>
           <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', marginBottom: '1rem', margin: '0 0 1rem' }}>Penerimaan Siswa Baru</h2>
           <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 16, lineHeight: 1.7, marginBottom: '2rem' }}>
             Daftarkan putra-putri Anda sekarang! Pendaftaran dapat dilakukan secara online melalui portal PPDB kami.

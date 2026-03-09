@@ -64,10 +64,18 @@ h1, h2, h3, h4 {
   box-shadow: 0 12px 30px rgba(0,0,0,0.1) !important;
 }
 
-.hover-btn {
-  transition: all 0.2s;
-}
 .hover-btn:hover {
   background: var(--green-primary) !important;
   color: var(--white) !important;
 }
+
+/* ─── Animations ────────────────────────────────── */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+

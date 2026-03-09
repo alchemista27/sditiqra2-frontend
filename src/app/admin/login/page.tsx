@@ -1,6 +1,6 @@
 'use client';
 // src/app/admin/login/page.tsx - Halaman Login Admin
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import { setToken } from '@/lib/auth';
@@ -12,6 +12,27 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState('SD IT Iqra 2 Kota Bengkulu');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const { settingsApi } = await import('@/lib/api');
+        const res = await settingsApi.getAll();
+        const settings: Record<string, string> = res.data;
+        if (settings.site_name) setSiteName(settings.site_name);
+        if (settings.site_logo) {
+          const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+          setLogoSrc(settings.site_logo.startsWith('http') ? settings.site_logo : `${apiBase}${settings.site_logo}`);
+        }
+      } catch (err) {
+        console.error('Failed to load settings', err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -19,18 +40,19 @@ export default function AdminLoginPage() {
     try {
       const result = await authApi.login(email, password);
       setToken(result.data.token);
-      const user = result.data.user;
+      const user = result.data.user as { role: string };
       if (!['SUPER_ADMIN', 'ADMIN_CMS', 'ADMIN_PPDB', 'KEPALA_SEKOLAH', 'KARYAWAN'].includes(user.role)) {
         setError('Akses ditolak. Akun ini tidak memiliki akses dashboard.');
         return;
       }
       router.push('/admin');
-    } catch (err: any) {
-      setError(err.message || 'Login gagal.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Login gagal.');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F3D24 0%, #1B6B44 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
@@ -40,9 +62,14 @@ export default function AdminLoginPage() {
 
       <div style={{ background: '#fff', borderRadius: 24, padding: '3rem', width: '100%', maxWidth: 440, boxShadow: '0 25px 60px rgba(0,0,0,0.25)', position: 'relative' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #1B6B44, #2D9164)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#fff', fontWeight: 800, fontSize: 24 }}>I2</div>
+          {logoSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoSrc} alt="Logo Sekolah" style={{ width: 64, height: 64, borderRadius: 18, objectFit: 'contain', background: '#fff', padding: '2px', margin: '0 auto 1rem', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} />
+          ) : (
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #1B6B44, #2D9164)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#fff', fontWeight: 800, fontSize: 24 }}>I2</div>
+          )}
           <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111827', marginBottom: '0.25rem' }}>Dashboard Admin</h1>
-          <p style={{ fontSize: 13, color: '#6B7280' }}>SD IT Iqra 2 Kota Bengkulu</p>
+          <p style={{ fontSize: 13, color: '#6B7280' }}>{siteName}</p>
         </div>
 
         <form onSubmit={handleSubmit}>

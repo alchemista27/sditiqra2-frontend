@@ -10,15 +10,22 @@ const navItems = [
   { href: '/admin/posts', icon: 'article', label: 'Berita & Artikel' },
   { href: '/admin/pages', icon: 'description', label: 'Halaman' },
   { href: '/admin/categories', icon: 'label', label: 'Kategori' },
-  { href: '/admin/media', icon: 'image', label: 'Media' },
-  { href: '/admin/ppdb', icon: 'school', label: 'PPDB — Pendaftaran' },
-  { href: '/admin/ppdb/observasi', icon: 'event_available', label: 'PPDB — Observasi' },
-  { href: '/admin/ppdb/kelas', icon: 'meeting_room', label: 'PPDB — Kelas' },
-  { href: '/admin/attendance', icon: 'how_to_reg', label: 'Kehadiran Staf' },
+  { href: '/admin/gallery', icon: 'photo_library', label: 'Galeri' },
+  { href: '/admin/media', icon: 'perm_media', label: 'Media Library' },
+];
+
+const ppdbItems = [
+  { href: '/admin/ppdb', icon: 'school', label: 'Pendaftar Baru' },
+  { href: '/admin/ppdb/observasi', icon: 'event_available', label: 'Jadwal Observasi' },
+  { href: '/admin/ppdb/kelas', icon: 'meeting_room', label: 'Pembagian Kelas' },
+];
+
+const attendanceItems = [
+  { href: '/admin/attendance', icon: 'how_to_reg', label: 'Log Kehadiran' },
   { href: '/admin/attendance/leaves', icon: 'event_busy', label: 'Pengajuan Izin' },
-  { href: '/admin/attendance/holidays', icon: 'calendar_month', label: 'Hari Libur' },
+  { href: '/admin/attendance/holidays', icon: 'calendar_month', label: 'Daftar Libur' },
   { href: '/admin/attendance/config', icon: 'my_location', label: 'Geofencing' },
-  { href: '/admin/attendance/reports', icon: 'download', label: 'Laporan Absensi' },
+  { href: '/admin/attendance/reports', icon: 'download', label: 'Ekspor Excel' },
   { href: '/admin/attendance/anomalies', icon: 'warning', label: 'Log Anomali' },
 ];
 
@@ -34,6 +41,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [user, setUser] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+
+  // Auto-open accordions based on current path
+  useEffect(() => {
+    if (pathname.startsWith('/admin/ppdb')) setOpenAccordion('ppdb');
+    else if (pathname.startsWith('/admin/attendance')) setOpenAccordion('attendance');
+  }, [pathname]);
 
   useEffect(() => {
     if (pathname === '/admin/login') { setLoaded(true); return; }
@@ -79,10 +93,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             return (
               <Link key={item.href} href={item.href} style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.65rem 0.75rem', borderRadius: 10, marginBottom: '0.15rem',
+                padding: '0.65rem 0.75rem', borderRadius: 8, marginBottom: '0.15rem',
                 background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
                 color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
-                textDecoration: 'none', fontSize: 14, fontWeight: isActive ? 600 : 400,
+                textDecoration: 'none', fontSize: 13, fontWeight: isActive ? 600 : 400,
                 transition: 'all 0.15s',
                 borderLeft: isActive ? '3px solid #C9A84C' : '3px solid transparent',
               }}>
@@ -92,17 +106,87 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             );
           })}
 
+          {/* Accordion PPDB */}
+          <div style={{ marginTop: '0.5rem' }}>
+            <button 
+              onClick={() => setOpenAccordion(openAccordion === 'ppdb' ? null : 'ppdb')}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.65rem 0.75rem', borderRadius: 8, background: 'transparent', border: 'none',
+                color: pathname.startsWith('/admin/ppdb') ? '#fff' : 'rgba(255,255,255,0.65)',
+                cursor: 'pointer', fontSize: 13, fontWeight: pathname.startsWith('/admin/ppdb') ? 600 : 500,
+                transition: 'all 0.2s', borderLeft: pathname.startsWith('/admin/ppdb') ? '3px solid #C9A84C' : '3px solid transparent',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>group_add</span>
+                Manajemen PPDB
+              </div>
+              <span className="material-symbols-outlined" style={{ fontSize: 18, transform: openAccordion === 'ppdb' ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
+            </button>
+            {openAccordion === 'ppdb' && (
+              <div style={{ paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
+                {ppdbItems.map(item => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link key={item.href} href={item.href} style={{
+                      display: 'block', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: 12,
+                      color: isActive ? '#F2D98A' : 'rgba(255,255,255,0.5)', background: isActive ? 'rgba(201,168,76,0.1)' : 'transparent',
+                      textDecoration: 'none', marginBottom: '0.1rem', fontWeight: isActive ? 600 : 400,
+                    }}>
+                      • {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Accordion Absensi */}
+          <div style={{ marginTop: '0.25rem' }}>
+            <button 
+              onClick={() => setOpenAccordion(openAccordion === 'attendance' ? null : 'attendance')}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0.65rem 0.75rem', borderRadius: 8, background: 'transparent', border: 'none',
+                color: pathname.startsWith('/admin/attendance') ? '#fff' : 'rgba(255,255,255,0.65)',
+                cursor: 'pointer', fontSize: 13, fontWeight: pathname.startsWith('/admin/attendance') ? 600 : 500,
+                transition: 'all 0.2s', borderLeft: pathname.startsWith('/admin/attendance') ? '3px solid #C9A84C' : '3px solid transparent',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>co_present</span>
+                Kehadiran Staf
+              </div>
+              <span className="material-symbols-outlined" style={{ fontSize: 18, transform: openAccordion === 'attendance' ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
+            </button>
+            {openAccordion === 'attendance' && (
+              <div style={{ paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
+                {attendanceItems.map(item => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link key={item.href} href={item.href} style={{
+                      display: 'block', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: 12,
+                      color: isActive ? '#F2D98A' : 'rgba(255,255,255,0.5)', background: isActive ? 'rgba(201,168,76,0.1)' : 'transparent',
+                      textDecoration: 'none', marginBottom: '0.1rem', fontWeight: isActive ? 600 : 400,
+                    }}>
+                      • {item.label}
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Pengaturan Section */}
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1rem' }}>Pengaturan</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1.5rem' }}>Pengaturan</div>
           {settingsItems.map(item => {
             const isActive = pathname === item.href || pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href} style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.65rem 0.75rem', borderRadius: 10, marginBottom: '0.15rem',
+                padding: '0.65rem 0.75rem', borderRadius: 8, marginBottom: '0.15rem',
                 background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
                 color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
-                textDecoration: 'none', fontSize: 14, fontWeight: isActive ? 600 : 400,
+                textDecoration: 'none', fontSize: 13, fontWeight: isActive ? 600 : 400,
                 transition: 'all 0.15s',
                 borderLeft: isActive ? '3px solid #C9A84C' : '3px solid transparent',
               }}>
@@ -130,7 +214,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Top bar */}
         <div style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '0.875rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
           <div style={{ fontWeight: 600, color: '#111827', fontSize: 15 }}>
-            {[...navItems, ...settingsItems].find(n => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(n.href)))?.label || 'Dashboard'}
+            {
+              [...navItems, ...ppdbItems, ...attendanceItems, ...settingsItems].find(n => pathname === n.href || (n.href !== '/admin' && pathname.startsWith(n.href)))?.label 
+              || 'Dashboard'
+            }
           </div>
           <Link href="/" target="_blank" style={{ fontSize: 13, color: '#1B6B44', textDecoration: 'none', fontWeight: 500 }}>Lihat Website →</Link>
         </div>

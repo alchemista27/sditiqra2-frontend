@@ -141,10 +141,10 @@ export default function AdminAttendancePage() {
                   </td>
                   <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
                     {log.anomalyFlag ? (
-                      <span style={{ padding: '0.2rem 0.5rem', borderRadius: 20, fontSize: 10, fontWeight: 700, background: '#FEE2E2', color: '#991B1B' }}>
-                        ⚠️ {log.anomalyFlag === 'MOCK_GPS' ? 'FAKE GPS' : log.anomalyFlag === 'OUT_OF_RADIUS' ? 'LUAR RADIUS' : log.anomalyFlag}
+                      <span style={{ padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: 10, fontWeight: 700, background: '#FEE2E2', color: '#991B1B', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>warning</span> {log.anomalyFlag === 'MOCK_GPS' ? 'FAKE GPS' : log.anomalyFlag === 'OUT_OF_RADIUS' ? 'LUAR RADIUS' : log.anomalyFlag}
                       </span>
-                    ) : <span style={{ color: '#34D399', fontSize: 16 }}>✓</span>}
+                    ) : <span className="material-symbols-outlined" style={{ color: '#34D399', fontSize: 18 }}>check_circle</span>}
                   </td>
                 </tr>
               ))}
@@ -180,7 +180,12 @@ export default function AdminAttendancePage() {
                     }}>{log.isLate ? 'TERLAMBAT' : log.type}</span>
                   </td>
                   <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontSize: 12, color: '#6B7280' }}>
-                    {log.anomalyFlag ? `⚠️ ${log.anomalyNote || log.anomalyFlag}` : log.note || '-'}
+                    {log.anomalyFlag ? (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#92400E' }}>warning</span>
+                        {log.anomalyNote || log.anomalyFlag}
+                      </span>
+                    ) : (log.note || '-')}
                   </td>
                 </tr>
               ))}

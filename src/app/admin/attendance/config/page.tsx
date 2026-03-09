@@ -24,9 +24,9 @@ export default function AttendanceConfigPage() {
     setMsg('');
     try {
       await attendanceApi.updateConfig(getToken() || '', config);
-      setMsg('✅ Konfigurasi berhasil disimpan!');
+      setMsg('SUCCESS: Konfigurasi berhasil disimpan!');
       setTimeout(() => setMsg(''), 3000);
-    } catch (err: any) { setMsg('❌ ' + err.message); }
+    } catch (err: any) { setMsg('ERROR: ' + err.message); }
     finally { setSaving(false); }
   };
 
@@ -42,12 +42,16 @@ export default function AttendanceConfigPage() {
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827' }}>Pengaturan Geofencing</h1>
           <p style={{ color: '#6B7280', fontSize: 14, marginTop: '0.25rem' }}>Atur lokasi sekolah, radius absensi, dan jam kerja</p>
         </div>
-        <button onClick={handleSave} disabled={saving} style={{ padding: '0.65rem 1.5rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>
-          {saving ? 'Menyimpan...' : '💾 Simpan Perubahan'}
+        <button onClick={handleSave} disabled={saving} style={{ padding: '0.65rem 1.5rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{saving ? 'hourglass_empty' : 'save'}</span>
+          {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
         </button>
       </div>
 
-      {msg && <div style={{ padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', background: msg.startsWith('✅') ? '#D1FAE5' : '#FEE2E2', color: msg.startsWith('✅') ? '#065F46' : '#991B1B', fontSize: 14, fontWeight: 500 }}>{msg}</div>}
+      {msg && <div style={{ padding: '0.75rem 1rem', borderRadius: 8, marginBottom: '1rem', background: msg.startsWith('SUCCESS') ? '#D1FAE5' : '#FEE2E2', color: msg.startsWith('SUCCESS') ? '#065F46' : '#991B1B', fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {msg.startsWith('SUCCESS') ? <span className="material-symbols-outlined">check_circle</span> : <span className="material-symbols-outlined">error</span>}
+        {msg.replace('SUCCESS: ', '').replace('ERROR: ', '')}
+      </div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Lokasi Sekolah */}

@@ -80,8 +80,8 @@ export default function HolidaysPage() {
           <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} style={{ padding: '0.5rem 0.75rem', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 14 }}>
             {[2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <button onClick={handleSeedNational} disabled={seeding} style={{ padding: '0.5rem 1rem', background: '#EDE9FE', color: '#5B21B6', border: '1px solid #C4B5FD', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
-            {seeding ? '...' : '🇮🇩 Seed Libur Nasional'}
+          <button onClick={handleSeedNational} disabled={seeding} style={{ padding: '0.5rem 1rem', background: '#EDE9FE', color: '#5B21B6', border: '1px solid #C4B5FD', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>public</span> {seeding ? '...' : 'Seed Libur Nasional'}
           </button>
           <button onClick={() => { setShowForm(true); setEditId(null); setForm({ date: '', name: '', type: 'SCHOOL', isRecurring: false }); }} style={{ padding: '0.5rem 1rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
             + Tambah Libur
@@ -141,8 +141,9 @@ export default function HolidaysPage() {
                   <td style={{ padding: '0.85rem 1rem', fontWeight: 500 }}>{formatDate(h.date)}</td>
                   <td style={{ padding: '0.85rem 1rem', color: '#374151' }}>{h.name}</td>
                   <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
-                    <span style={{ padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: 11, fontWeight: 600, background: h.type === 'NATIONAL' ? '#DBEAFE' : '#FEF3C7', color: h.type === 'NATIONAL' ? '#1E40AF' : '#92400E' }}>
-                      {h.type === 'NATIONAL' ? '🇮🇩 Nasional' : '🏫 Sekolah'}
+                    <span style={{ padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: 11, fontWeight: 600, background: h.type === 'NATIONAL' ? '#DBEAFE' : '#FEF3C7', color: h.type === 'NATIONAL' ? '#1E40AF' : '#92400E', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>{h.type === 'NATIONAL' ? 'public' : 'school'}</span>
+                      {h.type === 'NATIONAL' ? 'Nasional' : 'Sekolah'}
                     </span>
                   </td>
                   <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>

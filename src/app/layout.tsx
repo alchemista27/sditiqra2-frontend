@@ -1,15 +1,38 @@
 // src/app/layout.tsx - Root Layout
 import type { Metadata } from 'next';
 import './globals.css';
+import { settingsApi } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: {
-    default: 'SD Islam Terpadu Iqra 2 Kota Bengkulu',
-    template: '%s | SD IT Iqra 2 Bengkulu',
-  },
-  description: 'Website resmi SD Islam Terpadu Iqra 2 Kota Bengkulu. Sekolah dasar Islam terpadu yang berkomitmen menghadirkan pendidikan berkualitas berbasis nilai-nilai Islam.',
-  keywords: ['SD IT Iqra 2', 'Bengkulu', 'sekolah dasar Islam', 'PPDB', 'pendaftaran siswa baru'],
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  let siteName = 'SD Islam Terpadu Iqra 2 Kota Bengkulu';
+  let description = 'Website resmi SD Islam Terpadu Iqra 2 Kota Bengkulu. Sekolah dasar Islam terpadu yang berkomitmen menghadirkan pendidikan berkualitas berbasis nilai-nilai Islam.';
+  let faviconUrl = '';
+
+  try {
+    const res = await settingsApi.getAll();
+    const settings: Record<string, string> = res.data;
+    if (settings.site_name) siteName = settings.site_name;
+    if (settings.site_tagline) description = settings.site_tagline;
+    if (settings.site_favicon) {
+      faviconUrl = settings.site_favicon.startsWith('http') ? settings.site_favicon : `${API_BASE}${settings.site_favicon}`;
+    }
+  } catch (error) {
+    console.error('Failed to fetch settings for metadata:', error);
+  }
+
+  const icons = faviconUrl ? { icon: faviconUrl, shortcut: faviconUrl, apple: faviconUrl } : undefined;
+
+  return {
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
+    description,
+    keywords: ['SD IT Iqra 2', 'Bengkulu', 'sekolah dasar Islam', 'PPDB', 'pendaftaran siswa baru'],
+    icons,
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

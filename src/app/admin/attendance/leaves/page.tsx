@@ -59,9 +59,17 @@ export default function LeavesPage() {
           <button key={s} onClick={() => setFilter(s)} style={{
             padding: '0.5rem 1rem', borderRadius: 8, border: filter === s ? '2px solid #1B6B44' : '1px solid #D1D5DB',
             background: filter === s ? '#D1FAE5' : '#fff', color: filter === s ? '#065F46' : '#374151',
-            fontWeight: 600, cursor: 'pointer', fontSize: 13
+            fontWeight: 600, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: '0.3rem'
           }}>
-            {s === 'ALL' ? 'Semua' : s === 'PENDING' ? '⏳ Menunggu' : s === 'APPROVED' ? '✅ Disetujui' : '❌ Ditolak'}
+            {s === 'ALL' ? (
+              <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>list_alt</span> Semua</>
+            ) : s === 'PENDING' ? (
+              <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>hourglass_empty</span> Menunggu</>
+            ) : s === 'APPROVED' ? (
+              <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span> Disetujui</>
+            ) : (
+              <><span className="material-symbols-outlined" style={{ fontSize: 16 }}>cancel</span> Ditolak</>
+            )}
           </button>
         ))}
       </div>
@@ -83,19 +91,25 @@ export default function LeavesPage() {
                   <span style={{ padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: 11, fontWeight: 600, background: statusColors[req.status]?.bg, color: statusColors[req.status]?.color }}>{req.status}</span>
                   <span style={{ padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: 11, fontWeight: 600, background: '#EDE9FE', color: '#5B21B6' }}>{leaveTypeLabels[req.type] || req.type}</span>
                 </div>
-                <p style={{ fontSize: 13, color: '#374151', marginBottom: '0.35rem' }}>📅 {formatDate(req.startDate)} — {formatDate(req.endDate)}</p>
-                <p style={{ fontSize: 13, color: '#6B7280' }}>💬 {req.reason}</p>
-                {req.attachment && <a href={req.attachment} target="_blank" style={{ fontSize: 12, color: '#1B6B44', textDecoration: 'underline', marginTop: '0.25rem', display: 'inline-block' }}>📎 Lihat Lampiran</a>}
+                <p style={{ fontSize: 13, color: '#374151', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#6B7280' }}>event</span>
+                  {formatDate(req.startDate)} — {formatDate(req.endDate)}
+                </p>
+                <p style={{ fontSize: 13, color: '#6B7280', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chat</span>
+                  {req.reason}
+                </p>
+                {req.attachment && <a href={req.attachment} target="_blank" style={{ fontSize: 12, color: '#1B6B44', textDecoration: 'underline', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}><span className="material-symbols-outlined" style={{ fontSize: 14 }}>attachment</span> Lihat Lampiran</a>}
                 {req.approverNote && <p style={{ fontSize: 12, color: '#92400E', marginTop: '0.35rem', fontStyle: 'italic' }}>Catatan: {req.approverNote}</p>}
               </div>
 
               {req.status === 'PENDING' && (
                 <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
-                  <button onClick={() => setNoteModal({ id: req.id, action: 'approve' })} disabled={!!actionLoading} style={{ padding: '0.5rem 1rem', background: '#D1FAE5', color: '#065F46', border: '1px solid #34D399', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
-                    ✅ Setujui
+                  <button onClick={() => setNoteModal({ id: req.id, action: 'approve' })} disabled={!!actionLoading} style={{ padding: '0.5rem 1rem', background: '#D1FAE5', color: '#065F46', border: '1px solid #34D399', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span> Setujui
                   </button>
-                  <button onClick={() => setNoteModal({ id: req.id, action: 'reject' })} disabled={!!actionLoading} style={{ padding: '0.5rem 1rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #F87171', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
-                    ❌ Tolak
+                  <button onClick={() => setNoteModal({ id: req.id, action: 'reject' })} disabled={!!actionLoading} style={{ padding: '0.5rem 1rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #F87171', borderRadius: 8, fontWeight: 600, cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>cancel</span> Tolak
                   </button>
                 </div>
               )}
@@ -108,8 +122,12 @@ export default function LeavesPage() {
       {noteModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 420 }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem' }}>
-              {noteModal.action === 'approve' ? '✅ Setujui Pengajuan' : '❌ Tolak Pengajuan'}
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {noteModal.action === 'approve' ? (
+                <><span className="material-symbols-outlined" style={{ color: '#065F46' }}>check_circle</span> Setujui Pengajuan</>
+              ) : (
+                <><span className="material-symbols-outlined" style={{ color: '#991B1B' }}>cancel</span> Tolak Pengajuan</>
+              )}
             </h3>
             <label style={{ fontWeight: 600, fontSize: 13, color: '#374151', marginBottom: '0.35rem', display: 'block' }}>Catatan (opsional)</label>
             <textarea rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="Tambahkan catatan..." style={{ width: '100%', padding: '0.65rem', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 14, resize: 'vertical' }} />
