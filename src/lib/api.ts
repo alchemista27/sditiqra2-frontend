@@ -198,6 +198,15 @@ export const attendanceApi = {
   updateConfig: (token: string, data: any) => fetcher('/attendance/config', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
 
   // Clock In/Out (GPS-based)
+  uploadSelfie: (token: string, file: File) => {
+    const fd = new FormData();
+    fd.append('selfie', file);
+    return fetch(`${API_URL}/attendance/upload-selfie`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    }).then(r => r.json());
+  },
   clockIn: (token: string, gpsData?: { latitude: number; longitude: number; isMockGps?: boolean; faceConfidence?: number; selfieUrl?: string }) =>
     fetcher('/attendance/clock-in', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(gpsData || {}) }),
   clockOut: (token: string, gpsData?: { latitude: number; longitude: number; isMockGps?: boolean; selfieUrl?: string }) =>
