@@ -2,7 +2,7 @@
 // ISR: Revalidate setiap 60 detik agar perubahan settings & berita cepat tampil
 import Link from 'next/link';
 import { postsApi, settingsApi } from '@/lib/api';
-import GallerySlideshow from '@/components/GallerySlideshow';
+import GalleryFeed from '@/components/GalleryFeed';
 
 export const revalidate = 60; // ISR: regenerate setiap 60 detik
 
@@ -119,7 +119,7 @@ export default async function HomePage() {
         <style>{`@media (max-width: 768px) { section > div > div:last-child { display: none !important; } section > div { grid-template-columns: 1fr !important; } }`}</style>
       </section>
 
-      {/* ─── GALLERY SLIDESHOW ──────────────────────────────── */}
+      {/* ─── GALLERY FEED ──────────────────────────────────────── */}
       <section style={{ padding: '5rem 1.5rem', background: '#F9FAFB' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
@@ -127,7 +127,10 @@ export default async function HomePage() {
             <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', color: '#111827', margin: '0 0 0.75rem' }}>Momen Kebersamaan</h2>
             <p style={{ color: '#6B7280', maxWidth: 500, margin: '0 auto' }}>Potret kegiatan belajar mengajar dan aktivitas unggulan di lingkungan sekolah kami.</p>
           </div>
-          <GallerySlideshow />
+          <GalleryFeed
+            cols={parseInt(settings.gallery_cols || '3')}
+            rows={parseInt(settings.gallery_rows || '2')}
+          />
         </div>
       </section>
 

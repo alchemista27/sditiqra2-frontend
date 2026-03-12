@@ -8,7 +8,7 @@ import { getToken } from '@/lib/auth';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-const BlockEditor = dynamic(() => import('@/components/cms/BlockEditor'), { ssr: false });
+const RichTextEditor = dynamic(() => import('@/components/cms/RichTextEditor'), { ssr: false });
 
 export default function CreatePage() {
   const router = useRouter();
@@ -78,9 +78,11 @@ export default function CreatePage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Konten (Block Editor) *</label>
-            <BlockEditor
+            <label className="block text-sm font-bold text-gray-700 mb-2">Konten Halaman *</label>
+            <RichTextEditor
+              content={form.content}
               onChange={(html) => setForm(f => ({ ...f, content: html }))}
+              placeholder="Mulai menulis konten halaman di sini..."
             />
           </div>
         </div>

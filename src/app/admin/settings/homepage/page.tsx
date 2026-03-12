@@ -66,6 +66,8 @@ export default function AdminHomepageEditorPage() {
   const [settings, setSettings] = useState<Settings>({});
   const [stats, setStats] = useState<StatItem[]>([]);
   const [features, setFeatures] = useState<FeatureItem[]>([]);
+  const [galleryCols, setGalleryCols] = useState('3');
+  const [galleryRows, setGalleryRows] = useState('2');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
@@ -81,6 +83,8 @@ export default function AdminHomepageEditorPage() {
       setSettings(d);
       try { setStats(JSON.parse(d.stats || '[]')); } catch { setStats([]); }
       try { setFeatures(JSON.parse(d.features || '[]')); } catch { setFeatures([]); }
+      if (d.gallery_cols) setGalleryCols(d.gallery_cols);
+      if (d.gallery_rows) setGalleryRows(d.gallery_rows);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -135,6 +139,19 @@ export default function AdminHomepageEditorPage() {
   const removeFeature = (i: number) => setFeatures(features.filter((_, idx) => idx !== i));
   const updateFeature = (i: number, field: keyof FeatureItem, val: string) => {
     setFeatures(features.map((f, idx) => idx === i ? { ...f, [field]: val } : f));
+  };
+
+  // ── Save Gallery Settings ──────────────────────────────────
+  const saveGallery = async () => {
+    setSaving('gallery');
+    try {
+      await settingsApi.updateMany(getToken()!, {
+        gallery_cols: galleryCols,
+        gallery_rows: galleryRows,
+      });
+      showToast('✅ Pengaturan galeri disimpan!');
+    } catch { showToast('❌ Gagal menyimpan.', 'err'); }
+    setSaving(null);
   };
 
   if (loading) return (
@@ -289,6 +306,51 @@ export default function AdminHomepageEditorPage() {
             style={{ padding: '0.65rem 1.5rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: 14 }}>
             <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{saving === 'features' ? 'sync' : 'save'}</span>
             {saving === 'features' ? 'Menyimpan...' : 'Simpan Features'}
+          </button>
+        </div>
+      </SectionCard>
+
+      {/* ─── GALLERY SETTINGS ──────────────────────────── */}
+      <SectionCard title="Pengaturan Galeri Homepage" icon="photo_library" badge="Grid Feed">
+        <p style={{ fontSize: 13, color: '#6B7280', marginBottom: '1.25rem', lineHeight: 1.6 }}>
+          Atur jumlah kolom dan baris yang tampil di galeri homepage. Total gambar per halaman = Kolom × Baris.
+        </p>
+        {/* Preview Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(parseInt(galleryCols) || 3, 6)}, 1fr)`, gap: '0.35rem', marginBottom: '1.25rem' }}>
+          {Array.from({ length: (parseInt(galleryCols) || 3) * Math.min(parseInt(galleryRows) || 2, 3) }).map((_, i) => (
+            <div key={i} style={{ background: i % 3 === 0 ? '#A7F3D0' : i % 3 === 1 ? '#D1FAE5' : '#ECFDF5', borderRadius: 6, aspectRatio: '5/4' }} />
+          ))}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 1rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Jumlah Kolom</label>
+            <input
+              type="number" min="1" max="6"
+              value={galleryCols}
+              onChange={e => setGalleryCols(e.target.value)}
+              style={{ width: '100%', padding: '0.7rem 1rem', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' }}
+            />
+            <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: '0.3rem' }}>Rekomendasi: 3–4 kolom</p>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Jumlah Baris</label>
+            <input
+              type="number" min="1" max="10"
+              value={galleryRows}
+              onChange={e => setGalleryRows(e.target.value)}
+              style={{ width: '100%', padding: '0.7rem 1rem', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' }}
+            />
+            <p style={{ fontSize: 12, color: '#9CA3AF', marginTop: '0.3rem' }}>Rekomendasi: 2–3 baris</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem' }}>
+          <span style={{ fontSize: 13, color: '#6B7280' }}>
+            {parseInt(galleryCols) || 3} kolom × {parseInt(galleryRows) || 2} baris = <strong style={{ color: '#111827' }}>{(parseInt(galleryCols) || 3) * (parseInt(galleryRows) || 2)} foto</strong> per halaman
+          </span>
+          <button onClick={saveGallery} disabled={saving === 'gallery'}
+            style={{ padding: '0.65rem 1.5rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: 14 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{saving === 'gallery' ? 'sync' : 'save'}</span>
+            {saving === 'gallery' ? 'Menyimpan...' : 'Simpan Pengaturan Galeri'}
           </button>
         </div>
       </SectionCard>

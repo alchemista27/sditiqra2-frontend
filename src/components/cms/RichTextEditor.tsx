@@ -2,7 +2,7 @@
 // src/components/cms/RichTextEditor.tsx
 // Editor teks kaya WordPress-like menggunakan Tiptap v3
 import { useEditor, EditorContent } from '@tiptap/react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -10,6 +10,7 @@ import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Placeholder from '@tiptap/extension-placeholder';
+import MediaLibraryModal from './MediaLibraryModal';
 
 interface Props {
   content: string;
@@ -31,7 +32,11 @@ function ToolbarButton({
     <button
       type="button"
       title={title}
-      onClick={onClick}
+      onMouseDown={(e) => {
+        // Prevent focus loss from editor when clicking toolbar
+        e.preventDefault();
+        onClick();
+      }}
       disabled={disabled}
       style={{
         padding: '0.3rem 0.5rem',
@@ -63,6 +68,7 @@ function Divider() {
 // ─── Komponen Utama Editor ────────────────────────────────────
 export default function RichTextEditor({ content, onChange, placeholder }: Props) {
   const [bubblePos, setBubblePos] = useState<{ x: number; y: number } | null>(null);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const editorWrapRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
@@ -121,8 +127,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
     },
   });
 
-  const handleInsertImage = () => {
-    const url = window.prompt('Masukkan URL gambar:');
+  const handleInsertImage = (url: string) => {
     if (url && editor) {
       editor.chain().focus().setImage({ src: url }).run();
     }
@@ -184,7 +189,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
 
         {/* Link & Image */}
         <ToolbarButton title="Insert / Edit Link" active={editor.isActive('link')} onClick={handleSetLink}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>link</span></ToolbarButton>
-        <ToolbarButton title="Insert Image (dari URL)" onClick={handleInsertImage}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>image</span></ToolbarButton>
+        <ToolbarButton title="Insert Media" onClick={() => setMediaModalOpen(true)}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>image</span></ToolbarButton>
         <Divider />
 
         {/* Undo / Redo */}
@@ -210,15 +215,15 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
             pointerEvents: 'auto',
           }}
         >
-          <button type="button" onClick={() => editor.chain().focus().toggleBold().run()}
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleBold().run(); }}
             style={{ padding: '0.2rem 0.4rem', background: editor.isActive('bold') ? '#1B6B44' : 'transparent', color: '#D1FAE5', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 700 }}>
             B
           </button>
-          <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()}
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); editor.chain().focus().toggleItalic().run(); }}
             style={{ padding: '0.2rem 0.4rem', background: editor.isActive('italic') ? '#1B6B44' : 'transparent', color: '#D1FAE5', border: 'none', borderRadius: 4, cursor: 'pointer', fontStyle: 'italic' }}>
             I
           </button>
-          <button type="button" onClick={handleSetLink}
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); handleSetLink(); }}
             style={{ padding: '0.2rem 0.4rem', background: editor.isActive('link') ? '#1B6B44' : 'transparent', color: '#D1FAE5', border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}>
             <span className="material-symbols-outlined" style={{ fontSize: 14 }}>link</span>
           </button>
@@ -233,6 +238,13 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
         <span>{editor.getText().length} karakter</span>
         <span>{editor.getText().split(/\s+/).filter(Boolean).length} kata</span>
       </div>
+
+      {/* ─── MEDIA LIBRARY MODAL ─────────────────────────── */}
+      <MediaLibraryModal
+        open={mediaModalOpen}
+        onClose={() => setMediaModalOpen(false)}
+        onSelect={(url) => handleInsertImage(url)}
+      />
 
       {/* ─── CSS ─────────────────────────────────────────── */}
       <style>{`
