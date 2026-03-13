@@ -3,17 +3,22 @@
 // Navbar dinamis: menu dibaca dari API CMS (menuApi), logo dari site settings
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { menuApi, settingsApi } from '@/lib/api';
 import type { MenuItem } from '@/lib/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [siteName, setSiteName] = useState('SD IT Iqra 2');
   const [logoUrl, setLogoUrl] = useState('');
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  
+  // Check if we're on homepage
+  const isHomepage = pathname === '/';
 
   useEffect(() => {
     Promise.allSettled([
@@ -39,17 +44,18 @@ export default function Navbar() {
     ? (logoUrl.startsWith('http') ? logoUrl : `${API_BASE}${logoUrl}`)
     : null;
 
-  // Hanya tampilkan root items (parentId = null)
-  const rootItems = menuItems.filter(m => !m.parentId);
+  // menuItems dari API sudah berupa tree (children nested di dalam parent)
+  // Jadi langsung gunakan menuItems sebagai rootItems
+  const rootItems = menuItems;
 
   return (
     <header style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-      background: scrolled ? 'rgba(255,255,255,0.97)' : 'transparent',
-      backdropFilter: scrolled ? 'blur(12px)' : 'none',
-      boxShadow: scrolled ? '0 2px 20px rgba(0,0,0,0.08)' : 'none',
+      background: isHomepage ? (scrolled ? 'rgba(255,255,255,0.97)' : 'transparent') : 'rgba(255,255,255,0.97)',
+      backdropFilter: isHomepage ? (scrolled ? 'blur(12px)' : 'none') : 'blur(12px)',
+      boxShadow: scrolled || !isHomepage ? '0 2px 20px rgba(0,0,0,0.08)' : 'none',
       transition: 'all 0.3s ease',
-      borderBottom: scrolled ? '1px solid #E5E7EB' : 'none',
+      borderBottom: (scrolled || !isHomepage) ? '1px solid #E5E7EB' : 'none',
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 70 }}>
         {/* Logo */}
@@ -68,12 +74,12 @@ export default function Navbar() {
           <div>
             <div style={{
               fontWeight: 800, fontSize: 14, lineHeight: 1.2,
-              color: scrolled ? '#1B6B44' : '#fff',
-              textShadow: scrolled ? 'none' : '0 1px 4px rgba(0,0,0,0.4)',
+              color: (scrolled || !isHomepage) ? '#1B6B44' : '#fff',
+              textShadow: (scrolled || !isHomepage) ? 'none' : '0 1px 4px rgba(0,0,0,0.4)',
             }}>{siteName}</div>
             <div style={{
               fontSize: 11, lineHeight: 1.2,
-              color: scrolled ? '#4B5563' : 'rgba(255,255,255,0.8)',
+              color: (scrolled || !isHomepage) ? '#4B5563' : 'rgba(255,255,255,0.8)',
             }}>Kota Bengkulu</div>
           </div>
         </Link>
@@ -81,8 +87,9 @@ export default function Navbar() {
         {/* Desktop Nav */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }} className="desktop-nav">
           {rootItems.map(item => {
-            const subItems = menuItems.filter(m => m.parentId === item.id);
-            return <NavItem key={item.id} item={item} subItems={subItems} scrolled={scrolled} />;
+            // Gunakan item.children langsung dari nested structure API
+            const subItems = item.children?.filter(c => c.isActive) || [];
+            return <NavItem key={item.id} item={item} subItems={subItems} scrolled={scrolled} isHomepage={isHomepage} />;
           })}
           <Link href="/ppdb" style={{
             marginLeft: '0.5rem', padding: '0.5rem 1.25rem',
@@ -94,7 +101,7 @@ export default function Navbar() {
 
         {/* Mobile burger */}
         <button onClick={() => setOpen(!open)}
-          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: scrolled ? '#1B6B44' : '#fff' }}
+          style={{ display: 'none', background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, color: (scrolled || !isHomepage) ? '#1B6B44' : '#fff' }}
           className="burger-btn" aria-label="Menu">
           {open ? '✕' : '☰'}
         </button>
@@ -103,11 +110,26 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {open && (
         <div style={{ background: '#fff', borderTop: '1px solid #E5E7EB', padding: '1rem 1.5rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {rootItems.map(item => (
-            <MobileLink key={item.id} href={item.url} onClick={() => setOpen(false)} external={item.openInNewTab}>
-              {item.label}
-            </MobileLink>
-          ))}
+          {rootItems.map(item => {
+            const subItems = item.children?.filter(c => c.isActive) || [];
+            return (
+              <div key={item.id}>
+                <MobileLink href={item.url} onClick={() => setOpen(false)} external={item.openInNewTab}>
+                  {item.label}
+                </MobileLink>
+                {/* Submenu items di mobile */}
+                {subItems.length > 0 && (
+                  <div style={{ marginLeft: '1rem', marginTop: '0.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {subItems.map(sub => (
+                      <MobileLink key={sub.id} href={sub.url} onClick={() => setOpen(false)} external={sub.openInNewTab}>
+                        ↳ {sub.label}
+                      </MobileLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
           <Link href="/ppdb" onClick={() => setOpen(false)} style={{ textAlign: 'center', padding: '0.75rem', background: 'linear-gradient(135deg, #1B6B44, #2D9164)', color: '#fff', borderRadius: 10, fontWeight: 600, textDecoration: 'none', marginTop: '0.5rem' }}>
             Daftar PPDB
           </Link>
@@ -127,9 +149,9 @@ export default function Navbar() {
   );
 }
 
-function NavItem({ item, subItems, scrolled }: { item: MenuItem; subItems: MenuItem[]; scrolled: boolean }) {
-  const textColor = scrolled ? '#374151' : '#fff';
-  const textShadow = scrolled ? 'none' : '0 1px 3px rgba(0,0,0,0.45)';
+function NavItem({ item, subItems, scrolled, isHomepage }: { item: MenuItem; subItems: MenuItem[]; scrolled: boolean; isHomepage: boolean }) {
+  const textColor = (scrolled || !isHomepage) ? '#374151' : '#fff';
+  const textShadow = (scrolled || !isHomepage) ? 'none' : '0 1px 3px rgba(0,0,0,0.45)';
 
   if (subItems.length > 0) {
     return (
@@ -154,7 +176,7 @@ function NavItem({ item, subItems, scrolled }: { item: MenuItem; subItems: MenuI
       target={item.openInNewTab ? '_blank' : undefined}
       rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
       style={{ padding: '0.4rem 0.85rem', color: textColor, fontSize: 14, fontWeight: 500, textDecoration: 'none', borderRadius: 8, transition: 'background 0.2s', textShadow }}
-      onMouseEnter={e => (e.currentTarget.style.background = scrolled ? '#E8F5EE' : 'rgba(255,255,255,0.15)')}
+      onMouseEnter={e => (e.currentTarget.style.background = (scrolled || !isHomepage) ? '#E8F5EE' : 'rgba(255,255,255,0.15)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
       {item.label}
     </Link>

@@ -5,13 +5,13 @@ import { useState, useEffect, useRef } from 'react';
 import { galleryApi, type GalleryItem } from '@/lib/api';
 import { getToken } from '@/lib/auth';
 import Image from 'next/image';
+import MediaLibraryModal from '@/components/cms/MediaLibraryModal';
 
 type FormState = {
   title: string;
   description: string;
   order: string;
   isActive: boolean;
-  imageFile?: File;
   imageUrl?: string;
 };
 
@@ -21,12 +21,12 @@ export default function AdminGalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
   const [editItem, setEditItem] = useState<GalleryItem | null>(null);
   const [form, setForm] = useState<FormState>(empty);
   const [preview, setPreview] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = async () => {
     setLoading(true);
@@ -60,17 +60,17 @@ export default function AdminGalleryPage() {
     setShowModal(true);
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setForm(f => ({ ...f, imageFile: file }));
-    setPreview(URL.createObjectURL(file));
+  const handleSelectImage = (url: string) => {
+    // Tambahkan ke preview namun tetap buka modal untuk memilih lebih dari 1
+    setForm(f => ({ ...f, imageUrl: url }));
+    setPreview(url);
+    // Jangan tutup modal, biarkan user bisa milih lebih banyak
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title) { setError('Judul wajib diisi.'); return; }
-    if (!editItem && !form.imageFile) { setError('Pilih gambar terlebih dahulu.'); return; }
+    if (!editItem && !form.imageUrl) { setError('Pilih gambar terlebih dahulu.'); return; }
 
     setSaving(true);
     setError('');
@@ -80,7 +80,14 @@ export default function AdminGalleryPage() {
       fd.append('description', form.description);
       fd.append('order', form.order);
       fd.append('isActive', String(form.isActive));
-      if (form.imageFile) fd.append('image', form.imageFile);
+      
+      // Only append imageUrl if it's a new image (from media library)
+      // For updates without changing image, don't append anything
+      if (form.imageUrl && !editItem?.id) {
+        fd.append('imageUrl', form.imageUrl);
+      } else if (form.imageUrl && editItem && form.imageUrl !== editItem.imageUrl) {
+        fd.append('imageUrl', form.imageUrl);
+      }
 
       const token = getToken()!;
       if (editItem) {
@@ -181,21 +188,33 @@ export default function AdminGalleryPage() {
             {error && <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', color: '#DC2626', padding: '0.75rem 1rem', borderRadius: 10, marginBottom: '1rem', fontSize: 13 }}>{error}</div>}
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Image picker */}
-              <div
-                onClick={() => fileRef.current?.click()}
-                style={{ cursor: 'pointer', borderRadius: 12, overflow: 'hidden', border: '2px dashed #D1D5DB', background: '#F9FAFB', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexDirection: 'column', gap: 8 }}
-              >
-                {preview ? (
+              {/* Image picker button */}
+              {preview ? (
+                <div style={{ borderRadius: 12, overflow: 'hidden', background: '#F9FAFB', aspectRatio: '16/9', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                   <Image src={preview} alt="preview" fill sizes="500px" style={{ objectFit: 'cover' }} />
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined" style={{ fontSize: 40, color: '#9CA3AF' }}>add_photo_alternate</span>
-                    <span style={{ fontSize: 13, color: '#9CA3AF' }}>Klik untuk pilih gambar</span>
-                  </>
-                )}
-              </div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: 'none' }} />
+                </div>
+              ) : null}
+               <button
+                type="button"
+                onClick={() => setShowMediaModal(true)}
+                style={{
+                  padding: '0.85rem',
+                  background: 'linear-gradient(135deg, #1B6B44, #2D9164)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>photo_library</span>
+                {preview ? 'Ubah Foto' : 'Pilih Foto dari Media Library'}
+              </button>
 
               <div>
                 <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>Judul Foto *</label>
@@ -209,7 +228,7 @@ export default function AdminGalleryPage() {
                   style={{ width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #E5E7EB', borderRadius: 10, fontSize: 14, fontFamily: 'inherit' }} />
               </div>
 
-              <div style={{ display: 'flex', gap: 12 }}>
+<div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>Urutan</label>
                   <input type="number" value={form.order} onChange={e => setForm(f => ({ ...f, order: e.target.value }))}
@@ -233,6 +252,13 @@ export default function AdminGalleryPage() {
           </div>
         </div>
       )}
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        open={showMediaModal}
+        onClose={() => setShowMediaModal(false)}
+        onSelect={handleSelectImage}
+      />
     </div>
   );
 }

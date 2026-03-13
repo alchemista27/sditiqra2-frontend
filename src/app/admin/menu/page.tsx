@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { menuApi } from '@/lib/api';
+import { getToken } from '@/lib/auth';
 
 // Expanded type to handle parent/children in UI
 export interface MenuItem {
@@ -81,11 +82,27 @@ function getDragDepth(offset: number, indentationWidth: number) {
 function SortableMenuItem({ 
   item, 
   onEdit, 
-  onDelete 
+  onDelete, 
+  onMoveUp,
+  onMoveDown,
+  onIndent,
+  onDedent,
+  canMoveUp,
+  canMoveDown,
+  canIndent,
+  canDedent
 }: { 
   item: FlattenedItem;
   onEdit: (item: MenuItem) => void;
   onDelete: (id: string) => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  onIndent: (id: string) => void;
+  onDedent: (id: string) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  canIndent: boolean;
+  canDedent: boolean;
 }) {
   const {
     attributes,
@@ -137,7 +154,63 @@ function SortableMenuItem({
           <div className="text-xs text-gray-500 font-mono mt-0.5">{item.url}</div>
         </div>
 
-        {/* Actions */}
+        {/* Position & Hierarchy Actions */}
+        <div className="flex gap-1">
+          <button 
+            onClick={() => onMoveUp(item.id)} 
+            disabled={!canMoveUp}
+            title="Pindahkan ke atas"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: canMoveUp ? '#E8F5EE' : '#F3F4F6',
+              color: canMoveUp ? '#1B6B44' : '#D1D5DB',
+              cursor: canMoveUp ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
+          </button>
+          <button 
+            onClick={() => onMoveDown(item.id)} 
+            disabled={!canMoveDown}
+            title="Pindahkan ke bawah"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: canMoveDown ? '#E8F5EE' : '#F3F4F6',
+              color: canMoveDown ? '#1B6B44' : '#D1D5DB',
+              cursor: canMoveDown ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_downward</span>
+          </button>
+          <button 
+            onClick={() => onIndent(item.id)} 
+            disabled={!canIndent}
+            title="Jadikan submenu (pindahkan ke kanan)"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: canIndent ? '#E8F5EE' : '#F3F4F6',
+              color: canIndent ? '#1B6B44' : '#D1D5DB',
+              cursor: canIndent ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          </button>
+          <button 
+            onClick={() => onDedent(item.id)} 
+            disabled={!canDedent}
+            title="Pindahkan ke parent menu (pindahkan ke kiri)"
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ 
+              backgroundColor: canDedent ? '#E8F5EE' : '#F3F4F6',
+              color: canDedent ? '#1B6B44' : '#D1D5DB',
+              cursor: canDedent ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+          </button>
+        </div>
+
+        {/* Edit & Delete Actions */}
         <div className="flex gap-2">
           <button onClick={() => onEdit(item)} className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors" style={{ padding: '6px', backgroundColor: '#F0FDF4' }}>
             <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -369,15 +442,15 @@ export default function AdminMenuPage() {
   const handleSaveOrder = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       // Format payload for backend API
-      const payload = flattenedItems.map((item, i) => ({ 
-          id: item.id, 
+      const payload = flattenedItems.map((item, i) => ({
+          id: item.id,
           order: i,
-          parentId: item.parentId 
+          parentId: item.parentId
       }));
       
-      await fetch(process.env.NEXT_PUBLIC_API_URL + '/cms/menu/reorder', {
+      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/cms/menu/reorder', {
           method: 'PUT',
           headers: {
               'Content-Type': 'application/json',
@@ -386,10 +459,17 @@ export default function AdminMenuPage() {
           body: JSON.stringify({ items: payload })
       });
 
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.message || 'Server error');
+      }
+
       setReordered(false);
       showToast('✅ Urutan menu hierarki berhasil disimpan.');
       await fetchMenu();
-    } catch {
+    } catch (err) {
+      console.error('handleSaveOrder error:', err);
       showToast('❌ Gagal menyimpan urutan.');
     }
     setSaving(false);
@@ -398,7 +478,7 @@ export default function AdminMenuPage() {
   const handleSaveItem = async (data: Partial<MenuItem>) => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       
       if (editingItem && editingItem.id) {
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cms/menu/${editingItem.id}`, {
@@ -427,7 +507,7 @@ export default function AdminMenuPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Hapus item menu ini? Semua submenu (jika ada) juga akan menjadi yatim/terhapus.')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = getToken();
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cms/menu/${id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` },
@@ -439,41 +519,154 @@ export default function AdminMenuPage() {
     }
   };
 
+  const handleMoveUp = (id: string) => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    if (index <= 0) return;
+    
+    const newItems = [...flattenedItems];
+    [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
+    
+    // Rebuild tree untuk memastikan parentId konsisten
+    const rebuiltItems = flattenTree(buildTree(newItems));
+    setFlattenedItems(rebuiltItems);
+    setReordered(true);
+  };
+
+  const handleMoveDown = (id: string) => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    if (index >= flattenedItems.length - 1) return;
+    
+    const newItems = [...flattenedItems];
+    [newItems[index], newItems[index + 1]] = [newItems[index + 1], newItems[index]];
+    
+    // Rebuild tree untuk memastikan parentId konsisten
+    const rebuiltItems = flattenTree(buildTree(newItems));
+    setFlattenedItems(rebuiltItems);
+    setReordered(true);
+  };
+
+  const handleIndent = (id: string) => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    if (index === 0) return;
+    
+    const item = flattenedItems[index];
+    const prevItem = flattenedItems[index - 1];
+    
+    // Dapat di-indent jika prev item depth >= current item depth
+    // (artinya prev item adalah sibling atau ancestor - bisa jadi parent baru)
+    if (prevItem.depth < item.depth) return;
+    
+    const newItems = flattenedItems.map((it) => {
+      if (it.id === id) {
+        return { ...it, depth: item.depth + 1, parentId: prevItem.id };
+      }
+      return it;
+    });
+    
+    // Rebuild tree untuk memastikan semua parentId konsisten dengan depth
+    const rebuiltItems = flattenTree(buildTree(newItems));
+    setFlattenedItems(rebuiltItems);
+    setReordered(true);
+  };
+
+  const handleDedent = (id: string) => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    const item = flattenedItems[index];
+    
+    // Cek apakah dapat di-dedent (depth harus > 0)
+    if (item.depth === 0) return;
+    
+    // Cari parent untuk mendapatkan parentId yang baru
+    let newParentId: string | null = null;
+    if (item.depth > 1) {
+      // Cari item pada depth item.depth - 2
+      for (let i = index - 1; i >= 0; i--) {
+        if (flattenedItems[i].depth === item.depth - 2) {
+          newParentId = flattenedItems[i].id;
+          break;
+        }
+      }
+    }
+    
+    const newItems = flattenedItems.map((it) => {
+      if (it.id === id) {
+        return { ...it, depth: it.depth - 1, parentId: newParentId };
+      }
+      return it;
+    });
+    
+    // Rebuild tree untuk memastikan semua parentId konsisten dengan depth
+    const rebuiltItems = flattenTree(buildTree(newItems));
+    setFlattenedItems(rebuiltItems);
+    setReordered(true);
+  };
+
+  // Helper functions untuk conditional button states
+  const getCanMoveUp = (id: string): boolean => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    if (index <= 0) return false;
+    return true;
+  };
+
+  const getCanMoveDown = (id: string): boolean => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    if (index >= flattenedItems.length - 1) return false;
+    return true;
+  };
+
+  const getCanIndent = (id: string): boolean => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    if (index === 0) return false;
+    const item = flattenedItems[index];
+    const prevItem = flattenedItems[index - 1];
+    // Dapat indent jika prev item ada di posisi sebelumnya dan current depth belum terlalu dalam
+    // Prev item akan jadi parent, depth akan bertambah 1
+    // Hanya bisa indent jika prev item depth >= current item depth (saudara atau lebih dangkal)
+    return prevItem.depth >= item.depth;
+  };
+
+  const getCanDedent = (id: string): boolean => {
+    const index = flattenedItems.findIndex(item => item.id === id);
+    const item = flattenedItems[index];
+    return item.depth > 0;
+  };
+
   return (
     <div className="p-8 lg:p-12">
       <div className="max-w-4xl mx-auto max-h-screen overflow-y-auto pb-32">
         {/* Header */}
         <div className="flex justify-between items-start mb-8 flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Menu Navigasi Publik</h1>
-          <p className="text-sm text-gray-500">
-            Geser urutan ke atas/bawah. <strong className="text-gray-800">Geser ke kanan</strong> untuk membuat item menjadi Submenu.
-          </p>
-        </div>
-        <button 
-          onClick={() => { setEditingItem(null); setShowForm(true); }}
-          className="px-5 py-2.5 bg-[#1B6B44] text-white rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-[#0F3D24] transition-colors"
-          style={{ padding: '10px 20px', borderRadius: '12px' }}
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span> Tambah Item
-        </button>
-      </div>
-
-      {/* Save Reorder Warning */}
-      {reordered && (
-        <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4 mb-6 flex items-center justify-between gap-4 flex-wrap shadow-sm">
-          <div className="flex items-center gap-2 text-sm text-orange-800 font-medium">
-            <span className="material-symbols-outlined text-[20px]">warning</span>
-            Tata letak menu telah diubah secara lokal. Klik tombol simpan.
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900 mb-1">Menu Navigasi Publik</h1>
+            <p className="text-sm text-gray-500">
+              Gunakan tombol atas/bawah untuk menggeser urutan. Gunakan tombol kiri/kanan untuk mengubah hirarki menu.
+            </p>
           </div>
-          <button 
-            onClick={handleSaveOrder} 
-            disabled={saving}
-            className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-[18px]">{saving ? 'sync' : 'save'}</span>
-            {saving ? 'Loading...' : 'Simpan Hierarki'}
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleSaveOrder} 
+              disabled={saving}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+              style={{ padding: '10px 20px', borderRadius: '12px' }}
+            >
+              <span className="material-symbols-outlined text-[18px]">{saving ? 'sync' : 'save'}</span>
+              {saving ? 'Loading...' : 'Simpan'}
+            </button>
+            <button 
+              onClick={() => { setEditingItem(null); setShowForm(true); }}
+              className="px-5 py-2.5 bg-[#1B6B44] text-white rounded-xl font-semibold text-sm flex items-center gap-2 hover:bg-[#0F3D24] transition-colors"
+              style={{ padding: '10px 20px', borderRadius: '12px' }}
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span> Tambah Item
+            </button>
+          </div>
+        </div>
+
+      {/* Save Reorder Warning - simplified, removed since save button is always visible */}
+      {reordered && (
+        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3 mb-6 flex items-center gap-2 text-sm text-blue-800 font-medium shadow-sm">
+          <span className="material-symbols-outlined text-[20px]">info</span>
+          Tata letak menu telah diubah. Klik tombol &quot;Simpan&quot; untuk menyimpan perubahan.
         </div>
       )}
 
@@ -505,19 +698,32 @@ export default function AdminMenuPage() {
                   item={item}
                   onEdit={(i) => { setEditingItem(i as FlattenedItem); setShowForm(true); }}
                   onDelete={handleDelete}
+                  onMoveUp={handleMoveUp}
+                  onMoveDown={handleMoveDown}
+                  onIndent={handleIndent}
+                  onDedent={handleDedent}
+                  canMoveUp={getCanMoveUp(item.id)}
+                  canMoveDown={getCanMoveDown(item.id)}
+                  canIndent={getCanIndent(item.id)}
+                  canDedent={getCanDedent(item.id)}
                 />
               ))}
             </SortableContext>
-
-            {/* Drag Overlay visual for mouse trailing */}
             <DragOverlay>
-              {activeId && activeItem ? (
-                <div style={{ paddingLeft: `${activeItem.depth * 2}rem` }}>
-                    <div className="flex items-center gap-3 p-3 bg-white border-2 border-green-700 rounded-xl shadow-2xl opacity-90 scale-105">
-                        <span className="material-symbols-outlined text-xl text-green-700">drag_indicator</span>
-                        <div className="flex-1 font-semibold text-sm text-gray-900">{activeItem.label}</div>
-                    </div>
-                </div>
+              {activeItem ? (
+                <SortableMenuItem
+                  item={activeItem}
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                  onMoveUp={() => {}}
+                  onMoveDown={() => {}}
+                  onIndent={() => {}}
+                  onDedent={() => {}}
+                  canMoveUp={false}
+                  canMoveDown={false}
+                  canIndent={false}
+                  canDedent={false}
+                />
               ) : null}
             </DragOverlay>
           </DndContext>
@@ -534,13 +740,21 @@ export default function AdminMenuPage() {
         />
       )}
 
-      {/* Toast Notification */}
+      {/* Toast */}
       {toast && (
-        <div className="fixed bottom-8 right-8 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl z-[9999] animate-bounce font-medium text-sm">
+        <div style={{
+          position: 'fixed', bottom: 20, right: 20, background: '#fff', padding: '1rem 1.5rem',
+          borderRadius: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.15)', fontSize: 14, maxWidth: 300,
+          animation: 'slideUp 0.3s ease', zIndex: 100
+        }}>
           {toast}
         </div>
       )}
-    </div>
+
+      <style>{`
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+      </div>
     </div>
   );
 }
