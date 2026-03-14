@@ -4,13 +4,13 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import { useRef, useState } from 'react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Placeholder from '@tiptap/extension-placeholder';
 import MediaLibraryModal from './MediaLibraryModal';
+import { ResizableImage } from './ResizableImage';
 
 interface Props {
   content: string;
@@ -80,7 +80,7 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
       Underline,
       TextStyle,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      Image.configure({
+      ResizableImage.configure({
         inline: false,
         allowBase64: true,
       }),
@@ -273,18 +273,94 @@ export default function RichTextEditor({ content, onChange, placeholder }: Props
           border-radius: 10px; padding: 1rem 1.25rem; margin: 1em 0; overflow-x: auto;
         }
         .tiptap-editor pre code { background: transparent; color: inherit; padding: 0; border-radius: 0; }
-        .tiptap-editor img {
-          max-width: 100%; height: auto;
-          border-radius: 10px; margin: 1em 0;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-        .tiptap-editor img.ProseMirror-selectednode { outline: 3px solid #1B6B44; }
         .rich-text-link { color: #1B6B44; text-decoration: underline; }
         .tiptap-editor p.is-editor-empty:first-child::before {
           color: #adb5bd; content: attr(data-placeholder);
           float: left; height: 0; pointer-events: none;
         }
         .tiptap-editor hr { border: none; border-top: 2px solid #E5E7EB; margin: 1.5em 0; }
+        
+        /* ─── Resizable Image Styles ─────────────────────── */
+        .resizable-image-node {
+          display: block;
+          margin: 1em 0;
+        }
+        .resizable-image-wrapper {
+          position: relative;
+          display: inline-block;
+          max-width: 100%;
+          line-height: 0;
+        }
+        .resizable-image-wrapper img {
+          display: block;
+          border-radius: 10px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        /* Selected State */
+        .resizable-image-wrapper[data-selected="true"] img {
+          outline: 3px solid #1B6B44;
+          outline-offset: 2px;
+        }
+        /* Resize Handles */
+        .resize-handle {
+          position: absolute;
+          width: 12px;
+          height: 12px;
+          background: #1B6B44;
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          z-index: 10;
+          opacity: 0;
+          transition: opacity 0.15s, transform 0.15s;
+        }
+        .resizable-image-wrapper[data-selected="true"] .resize-handle {
+          opacity: 1;
+        }
+        /* Handle Positions */
+        .resize-handle.nw {
+          top: -6px;
+          left: -6px;
+          cursor: nw-resize;
+        }
+        .resize-handle.ne {
+          top: -6px;
+          right: -6px;
+          cursor: ne-resize;
+        }
+        .resize-handle.sw {
+          bottom: -6px;
+          left: -6px;
+          cursor: sw-resize;
+        }
+        .resize-handle.se {
+          bottom: -6px;
+          right: -6px;
+          cursor: se-resize;
+        }
+        /* Hover Effect */
+        .resize-handle:hover {
+          transform: scale(1.25);
+          background: #0F3D24;
+        }
+        /* Resizing State */
+        .resizable-image-wrapper.is-resizing {
+          user-select: none;
+        }
+        .resizable-image-wrapper.is-resizing img {
+          pointer-events: none;
+        }
+        /* Responsive - larger handles for touch */
+        @media (max-width: 768px) {
+          .resize-handle {
+            width: 18px;
+            height: 18px;
+          }
+          .resize-handle.nw { top: -9px; left: -9px; }
+          .resize-handle.ne { top: -9px; right: -9px; }
+          .resize-handle.sw { bottom: -9px; left: -9px; }
+          .resize-handle.se { bottom: -9px; right: -9px; }
+        }
       `}</style>
     </div>
   );

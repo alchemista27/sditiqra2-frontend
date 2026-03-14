@@ -23,8 +23,9 @@ export default function EditPage() {
   useEffect(() => {
     const fetchPage = async () => {
       try {
-        const r = await pagesApi.getAll(); // Or use a getById api if exists, for now we filter
-        const page = r.data.find(p => p.id === id);
+        // Use getBySlug which now supports both slug and ID lookup
+        const r = await pagesApi.getBySlug(id);
+        const page = r.data;
         if (page) {
           setForm({
             title: page.title,

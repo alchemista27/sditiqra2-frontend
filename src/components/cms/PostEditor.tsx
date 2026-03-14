@@ -37,9 +37,28 @@ export default function PostEditor({ mode, postId }: Props) {
 
     if (mode === 'edit' && postId) {
       setLoading(true);
-      postsApi.getBySlug(postId).catch(() => {
-        // coba fetch by id via workaround
-      }).finally(() => setLoading(false));
+      postsApi.getBySlug(postId)
+        .then((response) => {
+          const post = response.data;
+          if (post) {
+            setForm({
+              title: post.title || '',
+              excerpt: post.excerpt || '',
+              content: post.content || '',
+              categoryId: post.categoryId || '',
+              status: post.status || 'DRAFT',
+            });
+            if (post.coverImage) {
+              setCoverPreview(post.coverImage);
+            }
+          } else {
+            setError('Berita tidak ditemukan.');
+          }
+        })
+        .catch(() => {
+          setError('Gagal memuat data berita.');
+        })
+        .finally(() => setLoading(false));
     }
   }, [mode, postId]);
 
