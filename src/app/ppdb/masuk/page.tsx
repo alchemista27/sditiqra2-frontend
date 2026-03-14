@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ppdbParentApi } from '@/lib/api';
+import { useSiteSettings } from '@/components/SiteLogo';
 
 export const PARENT_TOKEN_KEY = 'sditiqra2_parent_token';
 
@@ -12,6 +13,7 @@ export default function PpdbMasukPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { logoUrl, siteName } = useSiteSettings();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -41,12 +43,17 @@ export default function PpdbMasukPage() {
       <div style={{ width: '100%', maxWidth: 440 }}>
         <div style={{ background: '#fff', borderRadius: 20, padding: '2.5rem', boxShadow: '0 8px 40px rgba(0,0,0,0.1)', border: '1px solid #E5E7EB' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 14,
-              background: 'linear-gradient(135deg, #1B6B44, #2D9164)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 1rem', fontSize: 28,
-            }}>🔐</div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={siteName} style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: '#fff', padding: 2, margin: '0 auto 1rem', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} />
+            ) : (
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: 'linear-gradient(135deg, #1B6B44, #2D9164)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 1rem', fontSize: 28,
+              }}>🔐</div>
+            )}
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '0.35rem' }}>Masuk Portal PPDB</h1>
             <p style={{ color: '#6B7280', fontSize: 14 }}>Gunakan email yang didaftarkan saat registrasi</p>
           </div>

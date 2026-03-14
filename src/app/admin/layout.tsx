@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getToken, getUserFromToken, removeToken } from '@/lib/auth';
+import { useSiteSettings } from '@/components/SiteLogo';
 
 const navItems = [
   { href: '/admin', icon: 'home', label: 'Dasbor' },
@@ -42,6 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const { logoUrl, siteName } = useSiteSettings();
 
   // Auto-open accordions based on current path
   useEffect(() => {
@@ -78,9 +80,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }} className="admin-sidebar">
         {/* Logo */}
         <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #2D9164, #C9A84C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16 }}>I2</div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={siteName} style={{ width: 40, height: 40, borderRadius: 10, objectFit: 'contain', background: '#fff', padding: 2 }} />
+          ) : (
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #2D9164, #C9A84C)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 16 }}>I2</div>
+          )}
           <div>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>SD IT Iqra 2</div>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>{siteName}</div>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Admin Panel</div>
           </div>
         </div>

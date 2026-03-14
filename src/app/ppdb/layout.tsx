@@ -1,14 +1,13 @@
+'use client';
 // src/app/ppdb/layout.tsx
 // Layout untuk seluruh area PPDB publik dan portal orang tua
-import type { Metadata } from 'next';
 import Link from 'next/link';
-
-export const metadata: Metadata = {
-  title: 'PPDB Online – SD IT Iqra 2 Kota Bengkulu',
-  description: 'Penerimaan Peserta Didik Baru (PPDB) SD IT Iqra 2 Kota Bengkulu. Daftar online, upload berkas, dan pantau status pendaftaran secara digital.',
-};
+import { useSiteSettings } from '@/components/SiteLogo';
+import NewsTicker from '@/components/NewsTicker';
 
 export default function PpdbLayout({ children }: { children: React.ReactNode }) {
+  const { logoUrl, siteName } = useSiteSettings();
+
   return (
     <div style={{ minHeight: '100vh', background: '#F0F9F4', fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif' }}>
       {/* Top bar navigasi PPDB */}
@@ -18,15 +17,20 @@ export default function PpdbLayout({ children }: { children: React.ReactNode }) 
         position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
       }}>
         <Link href="/ppdb" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: '#fff' }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 8,
-            background: 'linear-gradient(135deg, #2D9164, #C9A84C)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: 14,
-          }}>I2</div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={siteName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'contain', background: '#fff', padding: 2 }} />
+          ) : (
+            <div style={{
+              width: 36, height: 36, borderRadius: 8,
+              background: 'linear-gradient(135deg, #2D9164, #C9A84C)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 800, fontSize: 14,
+            }}>I2</div>
+          )}
           <div>
             <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>PPDB Online</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>SD IT Iqra 2 Bengkulu</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{siteName}</div>
           </div>
         </Link>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -37,7 +41,10 @@ export default function PpdbLayout({ children }: { children: React.ReactNode }) 
           }}>Masuk Portal</Link>
         </div>
       </header>
-      {children}
+      <div style={{ paddingBottom: '40px' }}>
+        {children}
+      </div>
+      <NewsTicker />
     </div>
   );
 }

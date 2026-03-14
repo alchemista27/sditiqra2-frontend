@@ -1,9 +1,11 @@
 'use client';
 // src/app/absen/login/page.tsx - Halaman Login Absensi
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import { setToken } from '@/lib/auth';
+import { useSiteSettings } from '@/components/SiteLogo';
+import NewsTicker from '@/components/NewsTicker';
 
 export default function AbsenLoginPage() {
   const router = useRouter();
@@ -11,12 +13,7 @@ export default function AbsenLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const [siteName, setSiteName] = useState('SD IT Iqra 2 Kota Bengkulu');
-
-  useEffect(() => {
-    // Optional: fetch config jika diperlukan
-  }, []);
+  const { logoUrl, siteName } = useSiteSettings();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +40,8 @@ export default function AbsenLoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F3D24 0%, #1B6B44 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+    <>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0F3D24 0%, #1B6B44 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', paddingBottom: '56px' }}>
       
       {/* Background decoration */}
       <div style={{ position: 'absolute', top: -50, right: -50, width: 250, height: 250, borderRadius: '50%', background: 'rgba(201,168,76,0.08)' }} />
@@ -51,9 +49,14 @@ export default function AbsenLoginPage() {
 
       <div style={{ background: '#fff', borderRadius: 24, padding: '2.5rem 1.5rem', width: '100%', maxWidth: 400, boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative', zIndex: 10 }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #1B6B44, #2D9164)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#fff', fontWeight: 800, fontSize: 24 }}>I2</div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={siteName} style={{ width: 64, height: 64, borderRadius: 18, objectFit: 'contain', background: '#fff', padding: 2, margin: '0 auto 1rem', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }} />
+          ) : (
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: 'linear-gradient(135deg, #1B6B44, #2D9164)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#fff', fontWeight: 800, fontSize: 24 }}>I2</div>
+          )}
           <h1 style={{ fontSize: 20, fontWeight: 800, color: '#111827', marginBottom: '0.25rem' }}>Absensi Pegawai</h1>
-          <p style={{ fontSize: 13, color: '#6B7280' }}>SD IT Iqra 2 Kota Bengkulu</p>
+          <p style={{ fontSize: 13, color: '#6B7280' }}>{siteName}</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -99,5 +102,7 @@ export default function AbsenLoginPage() {
         </form>
       </div>
     </div>
+    <NewsTicker />
+    </>
   );
 }

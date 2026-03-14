@@ -139,7 +139,29 @@ export default function Navbar() {
       <style>{`
         @media (max-width: 768px) { .desktop-nav { display: none !important; } .burger-btn { display: block !important; } }
         .nav-dropdown { position: relative; }
-        .nav-dropdown-menu { display: none; position: absolute; top: calc(100% + 8px); left: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); border: 1px solid #E5E7EB; padding: 0.5rem; min-width: 180px; z-index: 200; }
+        .nav-dropdown-menu {
+          display: none;
+          position: absolute;
+          top: calc(100% + 8px);
+          left: 0;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+          border: 1px solid #E5E7EB;
+          padding: 0.5rem;
+          min-width: 180px;
+          z-index: 200;
+        }
+        /* Invisible bridge to connect parent and dropdown */
+        .nav-dropdown-menu::before {
+          content: '';
+          position: absolute;
+          top: -12px;
+          left: 0;
+          right: 0;
+          height: 12px;
+          background: transparent;
+        }
         .nav-dropdown:hover .nav-dropdown-menu { display: block; animation: fadeDown 0.15s ease; }
         @keyframes fadeDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
         .nav-dropdown-item { display: block; padding: 0.5rem 0.75rem; color: #374151; font-size: 13.5px; font-weight: 500; text-decoration: none; border-radius: 8px; white-space: nowrap; }
