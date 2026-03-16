@@ -26,6 +26,7 @@ const TABS = [
   { key: 'payments', label: 'Pembayaran', icon: 'payments' },
   { key: 'registrations', label: 'Seleksi Admin', icon: 'assignment_turned_in' },
   { key: 'academic_years', label: 'Tahun Ajaran', icon: 'date_range' },
+  { key: 'settings', label: 'Pengaturan', icon: 'settings' },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -50,6 +51,11 @@ export default function AdminPPDBPage() {
   const [ayForm, setAyForm] = useState({ name: '', registrationStart: '', registrationEnd: '', quota: 0, registrationFee: 300000 });
   const [aySubmitting, setAySubmitting] = useState(false);
   const [ayMsg, setAyMsg] = useState('');
+
+  // Settings (Pengaturan)
+  const [settingsForm, setSettingsForm] = useState({ ppdb_bank_name: '', ppdb_account_no: '', ppdb_account_name: '' });
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsMsg, setSettingsMsg] = useState('');
 
   const token = getToken() || '';
 
@@ -86,12 +92,37 @@ export default function AdminPPDBPage() {
     finally { setLoading(false); }
   }, [token]);
 
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await ppdbAdminApi.getPpdbSettings();
+      const d = res.data || {};
+      setSettingsForm({
+        ppdb_bank_name: d.ppdb_bank_name || '',
+        ppdb_account_no: d.ppdb_account_no || '',
+        ppdb_account_name: d.ppdb_account_name || '',
+      });
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  }, []);
+
   useEffect(() => {
     if (tab === 'dashboard') loadDashboard();
     else if (tab === 'payments') loadRegistrations();
     else if (tab === 'registrations') loadRegistrations();
     else if (tab === 'academic_years') loadAcademicYears();
-  }, [tab, loadDashboard, loadRegistrations, loadAcademicYears]);
+    else if (tab === 'settings') loadSettings();
+  }, [tab, loadDashboard, loadRegistrations, loadAcademicYears, loadSettings]);
+
+  const saveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSettingsLoading(true); setSettingsMsg('');
+    try {
+      await ppdbAdminApi.updatePpdbSettings(token, settingsForm);
+      setSettingsMsg('SUCCESS: Pengaturan rekening berhasil disimpan.');
+    } catch (e: any) { setSettingsMsg('Error: ' + e.message); }
+    finally { setSettingsLoading(false); }
+  };
 
   // ── Actions ──
   const openDetail = async (id: string) => {
@@ -107,7 +138,7 @@ export default function AdminPPDBPage() {
     try {
       const note = approve ? '' : (prompt('Alasan penolakan pembayaran:') || 'Bukti tidak valid');
       await ppdbAdminApi.verifyPayment(token, id, { approved: approve, note });
-      setActionMsg(approve ? '✅ Pembayaran diverifikasi.' : '❌ Pembayaran ditolak.');
+      setActionMsg(approve ? 'SUCCESS: Pembayaran diverifikasi.' : 'ERROR: Pembayaran ditolak.');
       await openDetail(id);
       loadRegistrations();
     } catch (e: any) { setActionMsg('Error: ' + e.message); }
@@ -119,7 +150,7 @@ export default function AdminPPDBPage() {
     try {
       const note = passed ? (prompt('Catatan (opsional):') || '') : (prompt('Alasan penolakan:') || 'Tidak memenuhi syarat administrasi');
       await ppdbAdminApi.reviewRegistration(token, id, { result: passed ? 'ADMIN_PASSED' : 'REJECTED', note });
-      setActionMsg(passed ? '✅ Lulus seleksi administrasi.' : '❌ Pendaftar ditolak.');
+      setActionMsg(passed ? 'SUCCESS: Lulus seleksi administrasi.' : 'ERROR: Pendaftar ditolak.');
       await openDetail(id);
       loadRegistrations();
     } catch (e: any) { setActionMsg('Error: ' + e.message); }
@@ -131,7 +162,7 @@ export default function AdminPPDBPage() {
     setAySubmitting(true);
     try {
       await academicYearsApi.create(token, ayForm);
-      setAyMsg('✅ Tahun ajaran berhasil dibuat.');
+      setAyMsg('SUCCESS: Tahun ajaran berhasil dibuat.');
       setAyForm({ name: '', registrationStart: '', registrationEnd: '', quota: 0, registrationFee: 300000 });
       loadAcademicYears();
     } catch (e: any) { setAyMsg('Error: ' + e.message); }
@@ -162,8 +193,10 @@ export default function AdminPPDBPage() {
       </div>
 
       {error && (
-        <div style={{ background: '#FEF2F2', borderRadius: 10, padding: '0.875rem', marginBottom: '1rem', color: '#DC2626', fontSize: 14 }}>
-          ⚠️ {error} <button onClick={() => setError('')} style={{ marginLeft: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontWeight: 700 }}>×</button>
+        <div style={{ background: '#FEF2F2', borderRadius: 10, padding: '0.875rem', marginBottom: '1rem', color: '#DC2626', fontSize: 14, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>warning</span>
+          <span style={{ flex: 1 }}>{error}</span>
+          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626', fontWeight: 700, fontSize: 20, lineHeight: 1 }}>×</button>
         </div>
       )}
 
@@ -348,7 +381,10 @@ export default function AdminPPDBPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) 2fr', gap: '1.5rem' }}>
           <div style={{ background: '#fff', borderRadius: 16, padding: '1.5rem', border: '1px solid #E5E7EB', height: 'fit-content' }}>
             <div style={{ fontWeight: 700, marginBottom: '1.25rem', color: '#111827' }}>Tambah Tahun Ajaran</div>
-            {ayMsg && <div style={{ background: ayMsg.startsWith('✅') ? '#D1FAE5' : '#FEF2F2', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', fontSize: 13, color: ayMsg.startsWith('✅') ? '#065F46' : '#DC2626' }}>{ayMsg}</div>}
+            {ayMsg && <div style={{ background: ayMsg.startsWith('SUCCESS:') ? '#D1FAE5' : '#FEF2F2', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', fontSize: 13, color: ayMsg.startsWith('SUCCESS:') ? '#065F46' : '#DC2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{ayMsg.startsWith('SUCCESS:') ? 'check_circle' : 'error'}</span>
+              {ayMsg.replace(/^(SUCCESS:|ERROR:)\s*/, '')}
+            </div>}
             <form onSubmit={createAY} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {[
                 { key: 'name', label: 'Nama (misal: 2026/2027)', type: 'text' },
@@ -409,6 +445,60 @@ export default function AdminPPDBPage() {
         </div>
       )}
 
+      {/* ── SETTINGS TAB ── */}
+      {!loading && tab === 'settings' && (
+        <div style={{ maxWidth: 560 }}>
+          <div style={{ background: '#fff', borderRadius: 16, padding: '1.75rem', border: '1px solid #E5E7EB' }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#111827', marginBottom: '0.35rem' }}>Rekening Pembayaran PPDB</div>
+            <p style={{ color: '#6B7280', fontSize: 13, marginBottom: '1.5rem' }}>Informasi ini akan ditampilkan ke orang tua di halaman pembayaran pendaftaran.</p>
+
+            {settingsMsg && (
+              <div style={{ background: settingsMsg.startsWith('SUCCESS:') ? '#D1FAE5' : '#FEF2F2', borderRadius: 10, padding: '0.75rem', marginBottom: '1.25rem', fontSize: 13, fontWeight: 600, color: settingsMsg.startsWith('SUCCESS:') ? '#065F46' : '#DC2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{settingsMsg.startsWith('SUCCESS:') ? 'check_circle' : 'error'}</span>
+                {settingsMsg.replace(/^(SUCCESS:|ERROR:)\s*/, '')}
+              </div>
+            )}
+
+            <form onSubmit={saveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {[
+                { key: 'ppdb_bank_name', label: 'Nama Bank', placeholder: 'Contoh: BRI, BSI, Mandiri' },
+                { key: 'ppdb_account_no', label: 'Nomor Rekening', placeholder: 'Contoh: 1234-5678-9012-3456' },
+                { key: 'ppdb_account_name', label: 'Atas Nama Rekening', placeholder: 'Contoh: Yayasan Iqra Kota Bengkulu' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>{f.label}</label>
+                  <input
+                    id={`ppdb-settings-${f.key}`}
+                    required
+                    value={settingsForm[f.key as keyof typeof settingsForm]}
+                    onChange={e => setSettingsForm(s => ({ ...s, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => e.target.style.borderColor = '#1B6B44'}
+                    onBlur={e => e.target.style.borderColor = '#E5E7EB'}
+                  />
+                </div>
+              ))}
+
+              <button
+                id="ppdb-settings-submit"
+                type="submit"
+                disabled={settingsLoading}
+                style={{
+                  padding: '0.875rem', borderRadius: 12,
+                  background: settingsLoading ? '#9CA3AF' : 'linear-gradient(135deg, #1B6B44, #2D9164)',
+                  color: '#fff', border: 'none', cursor: settingsLoading ? 'not-allowed' : 'pointer',
+                  fontWeight: 700, fontSize: 15,
+                  boxShadow: settingsLoading ? 'none' : '0 4px 12px rgba(27,107,68,0.3)',
+                }}
+              >
+                {settingsLoading ? 'Menyimpan...' : <><span className="material-symbols-outlined" style={{ fontSize: 18, marginRight: '0.5rem' }}>save</span> Simpan Pengaturan Rekening</>}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── DETAIL MODAL ── */}
       {detailReg && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', padding: '1rem' }}>
@@ -425,7 +515,10 @@ export default function AdminPPDBPage() {
               <button onClick={() => { setDetailReg(null); setActionMsg(''); }} style={{ background: '#F3F4F6', border: 'none', borderRadius: 10, padding: '0.5rem', cursor: 'pointer', fontSize: 20, color: '#374151', lineHeight: 1 }}>×</button>
             </div>
 
-            {actionMsg && <div style={{ background: actionMsg.startsWith('✅') ? '#D1FAE5' : '#FEF2F2', borderRadius: 10, padding: '0.75rem', marginBottom: '1rem', fontSize: 13, fontWeight: 600, color: actionMsg.startsWith('✅') ? '#065F46' : '#DC2626' }}>{actionMsg}</div>}
+            {actionMsg && <div style={{ background: actionMsg.startsWith('SUCCESS:') ? '#D1FAE5' : '#FEF2F2', borderRadius: 10, padding: '0.75rem', marginBottom: '1rem', fontSize: 13, fontWeight: 600, color: actionMsg.startsWith('SUCCESS:') ? '#065F46' : '#DC2626', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{actionMsg.startsWith('SUCCESS:') ? 'check_circle' : 'error'}</span>
+              {actionMsg.replace(/^(SUCCESS:|ERROR:)\s*/, '')}
+            </div>}
 
             {/* Info orang tua */}
             <Section title="Orang Tua / Wali">
@@ -460,11 +553,13 @@ export default function AdminPPDBPage() {
               )}
               {detailReg.status === 'PAYMENT_UPLOADED' && (
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-                  <button disabled={actionLoading} onClick={() => verifyPayment(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
-                    ✅ Verifikasi Pembayaran
+                  <button disabled={actionLoading} onClick={() => verifyPayment(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
+                    Verifikasi Pembayaran
                   </button>
-                  <button disabled={actionLoading} onClick={() => verifyPayment(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
-                    ❌ Tolak
+                  <button disabled={actionLoading} onClick={() => verifyPayment(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>
+                    Tolak
                   </button>
                 </div>
               )}
@@ -492,11 +587,13 @@ export default function AdminPPDBPage() {
 
                 {detailReg.status === 'FORM_SUBMITTED' && (
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-                    <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
-                      ✅ Lulus Administrasi
+                    <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
+                      Lulus Administrasi
                     </button>
-                    <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
-                      ❌ Tolak
+                    <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>
+                      Tolak
                     </button>
                   </div>
                 )}

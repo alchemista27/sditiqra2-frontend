@@ -1,19 +1,20 @@
 'use client';
 // src/app/ppdb/portal/pembayaran/page.tsx
 import { useEffect, useState, useRef } from 'react';
-import { ppdbParentApi } from '@/lib/api';
+import { ppdbParentApi, ppdbAdminApi } from '@/lib/api';
 
 const PARENT_TOKEN_KEY = 'sditiqra2_parent_token';
 
-const BANK_INFO = {
+// Default values jika belum dikonfigurasi admin
+const DEFAULT_BANK_INFO = {
   bank: 'BRI',
   accountNo: '1234-5678-9012-3456',
   accountName: 'Yayasan Iqra Kota Bengkulu',
-  amount: 'Rp 300.000',
 };
 
 export default function PembayaranPage() {
   const [registration, setRegistration] = useState<any>(null);
+  const [bankInfo, setBankInfo] = useState(DEFAULT_BANK_INFO);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -26,6 +27,20 @@ export default function PembayaranPage() {
     const token = localStorage.getItem(PARENT_TOKEN_KEY);
     if (!token) return;
     ppdbParentApi.getMyRegistration(token).then(r => setRegistration(r.data)).catch(() => {});
+  }, []);
+
+  // Fetch pengaturan rekening dari API
+  useEffect(() => {
+    ppdbAdminApi.getPpdbSettings()
+      .then(res => {
+        const d = res.data || {};
+        setBankInfo({
+          bank: d.ppdb_bank_name || DEFAULT_BANK_INFO.bank,
+          accountNo: d.ppdb_account_no || DEFAULT_BANK_INFO.accountNo,
+          accountName: d.ppdb_account_name || DEFAULT_BANK_INFO.accountName,
+        });
+      })
+      .catch(() => {}); // Gunakan default jika gagal
   }, []);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,17 +87,17 @@ export default function PembayaranPage() {
       {/* Status badge */}
       {isVerified && (
         <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span style={{ fontSize: 24 }}>✅</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#065F46' }}>check_circle</span>
           <div>
             <div style={{ fontWeight: 700, color: '#065F46' }}>Pembayaran Terverifikasi</div>
-            <div style={{ fontSize: 13, color: '#047857' }}>Anda sekarang dapat mengisi formulir pendaftaran di menu "Formulir".</div>
+            <div style={{ fontSize: 13, color: '#047857' }}>Anda sekarang dapat mengisi formulir pendaftaran di menu &quot;Formulir&quot;.</div>
           </div>
         </div>
       )}
 
       {isUploaded && (
         <div style={{ background: '#EDE9FE', border: '1px solid #C4B5FD', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <span style={{ fontSize: 24 }}>⏳</span>
+          <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#5B21B6' }}>hourglass_empty</span>
           <div>
             <div style={{ fontWeight: 700, color: '#5B21B6' }}>Menunggu Verifikasi Admin</div>
             <div style={{ fontSize: 13, color: '#6D28D9' }}>Bukti transfer sudah diterima. Proses verifikasi 1×24 jam kerja.</div>
@@ -92,7 +107,10 @@ export default function PembayaranPage() {
 
       {isRejected && (
         <div style={{ background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
-          <div style={{ fontWeight: 700, color: '#B91C1C', marginBottom: '0.25rem' }}>❌ Bukti Transfer Ditolak</div>
+          <div style={{ fontWeight: 700, color: '#B91C1C', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>cancel</span>
+            Bukti Transfer Ditolak
+          </div>
           <div style={{ fontSize: 13, color: '#DC2626' }}>
             {registration?.paymentNote?.replace('[DITOLAK] ', '')}
           </div>
@@ -105,10 +123,10 @@ export default function PembayaranPage() {
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Transfer ke Rekening Berikut</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           {[
-            { label: 'Bank', val: BANK_INFO.bank },
-            { label: 'Nomor Rekening', val: BANK_INFO.accountNo },
-            { label: 'Atas Nama', val: BANK_INFO.accountName },
-            { label: 'Nominal', val: BANK_INFO.amount },
+            { label: 'Bank', val: bankInfo.bank },
+            { label: 'Nomor Rekening', val: bankInfo.accountNo },
+            { label: 'Atas Nama', val: bankInfo.accountName },
+            { label: 'Nominal', val: registration?.academicYear?.registrationFee ? `Rp ${Number(registration.academicYear.registrationFee).toLocaleString('id-ID')}` : 'Rp 300.000' },
           ].map(item => (
             <div key={item.label}>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{item.label}</div>
@@ -116,8 +134,9 @@ export default function PembayaranPage() {
             </div>
           ))}
         </div>
-        <div style={{ marginTop: '1rem', background: 'rgba(201,168,76,0.2)', border: '1px solid rgba(201,168,76,0.35)', borderRadius: 8, padding: '0.75rem', fontSize: 13, color: '#F2D98A' }}>
-          💡 Pastikan nominal transfer <strong>tepat Rp 300.000</strong> agar mudah diverifikasi
+        <div style={{ marginTop: '1rem', background: 'rgba(201,168,76,0.2)', border: '1px solid rgba(201,168,76,0.35)', borderRadius: 8, padding: '0.75rem', fontSize: 13, color: '#F2D98A', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 16, flexShrink: 0 }}>lightbulb</span>
+          <span>Pastikan nominal transfer <strong>tepat {registration?.academicYear?.registrationFee ? `Rp ${Number(registration.academicYear.registrationFee).toLocaleString('id-ID')}` : 'Rp 300.000'}</strong> agar mudah diverifikasi</span>
         </div>
       </div>
 
@@ -158,7 +177,7 @@ export default function PembayaranPage() {
               </div>
             ) : (
               <>
-                <div style={{ fontSize: 40, marginBottom: '0.75rem' }}>📷</div>
+                <span className="material-symbols-outlined" style={{ fontSize: 40, marginBottom: '0.75rem', color: '#9CA3AF' }}>photo_camera</span>
                 <div style={{ fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Klik atau seret foto bukti transfer ke sini</div>
                 <div style={{ fontSize: 13, color: '#9CA3AF' }}>JPG, PNG — Maks. 5 MB</div>
               </>

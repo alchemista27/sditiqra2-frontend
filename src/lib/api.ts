@@ -168,6 +168,12 @@ export const ppdbAdminApi = {
     fetcher(`/ppdb/admin/classrooms/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
   deleteClassroom: (token: string, id: string) =>
     fetcher(`/ppdb/admin/classrooms/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+
+  // Pengaturan PPDB (rekening bank)
+  getPpdbSettings: () =>
+    fetcher<{ data: Record<string, string> }>('/ppdb/settings'),
+  updatePpdbSettings: (token: string, data: Record<string, string>) =>
+    fetcher<{ data: Record<string, string> }>('/ppdb/admin/settings', { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
 };
 
 // ─── CMS Pages ────────────────────────────────────────────────
