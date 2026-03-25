@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { getToken, getUserFromToken, removeToken } from '@/lib/auth';
 import { useSiteSettings } from '@/components/SiteLogo';
+import ProfileMenu from '@/components/profile/ProfileMenu';
 
 const navItems = [
   { href: '/admin', icon: 'home', label: 'Dasbor' },
@@ -226,7 +227,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               || 'Dashboard'
             }
           </div>
-          <Link href="/" target="_blank" style={{ fontSize: 13, color: '#1B6B44', textDecoration: 'none', fontWeight: 500 }}>Lihat Website →</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <Link href="/" target="_blank" style={{ fontSize: 13, color: '#1B6B44', textDecoration: 'none', fontWeight: 500 }}>Lihat Website →</Link>
+            <ProfileMenu user={user} onLogout={handleLogout} />
+          </div>
         </div>
         <main style={{ flex: 1, padding: '2rem 1.5rem' }}>{children}</main>
       </div>

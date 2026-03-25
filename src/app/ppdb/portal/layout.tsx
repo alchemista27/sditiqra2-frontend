@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ppdbParentApi } from '@/lib/api';
+import EditPasswordModal from '@/components/profile/EditPasswordModal';
 
 export const PARENT_TOKEN_KEY = 'sditiqra2_parent_token';
 
@@ -53,6 +54,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   const [parent, setParent] = useState<any>(null);
   const [registration, setRegistration] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
+  const [editPwOpen, setEditPwOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     const token = localStorage.getItem(PARENT_TOKEN_KEY);
@@ -185,15 +187,31 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           })}
         </nav>
 
+        {/* Edit Password */}
+        <button onClick={() => setEditPwOpen(true)} style={{
+          marginTop: '1.5rem', width: '100%', padding: '0.6rem', background: '#F0F9F4',
+          border: '1px solid #D1FAE5', borderRadius: 10, cursor: 'pointer',
+          fontSize: 13, color: '#1B6B44', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock</span>
+          Ubah Password
+        </button>
+
         {/* Logout */}
         <button onClick={handleLogout} style={{
-          marginTop: '1.5rem', width: '100%', padding: '0.6rem', background: 'none',
+          marginTop: '0.5rem', width: '100%', padding: '0.6rem', background: 'none',
           border: '1px solid #E5E7EB', borderRadius: 10, cursor: 'pointer',
           fontSize: 13, color: '#6B7280', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
         }}>
           <span className="material-symbols-outlined" style={{ fontSize: 18 }}>logout</span>
           Keluar
         </button>
+
+        <EditPasswordModal
+          open={editPwOpen}
+          onClose={() => setEditPwOpen(false)}
+          customTokenKey={PARENT_TOKEN_KEY}
+        />
       </aside>
 
       {/* Main content */}

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { getToken, getUserFromToken, removeToken } from '@/lib/auth';
 import { useSiteSettings } from '@/components/SiteLogo';
 import NewsTicker from '@/components/NewsTicker';
+import EditPasswordModal from '@/components/profile/EditPasswordModal';
 
 const navItems = [
   { href: '/absen', label: 'Beranda', icon: 'home' },
@@ -19,6 +20,7 @@ export default function AbsenLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [loaded, setLoaded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [editPwOpen, setEditPwOpen] = useState(false);
   const { logoUrl, siteName } = useSiteSettings();
 
   useEffect(() => {
@@ -136,8 +138,36 @@ export default function AbsenLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Logout Button */}
-        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        {/* Edit Password & Logout */}
+        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <button
+            onClick={() => setEditPwOpen(true)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem',
+              background: 'rgba(255,255,255,0.08)',
+              color: 'rgba(255,255,255,0.8)',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock</span>
+            Ubah Password
+          </button>
           <button
             onClick={handleLogout}
             style={{
@@ -167,6 +197,8 @@ export default function AbsenLayout({ children }: { children: React.ReactNode })
             Keluar
           </button>
         </div>
+
+        <EditPasswordModal open={editPwOpen} onClose={() => setEditPwOpen(false)} />
       </aside>
 
       {/* Main Content Area */}

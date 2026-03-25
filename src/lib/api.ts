@@ -29,6 +29,12 @@ export const authApi = {
     }),
   me: (token: string) =>
     fetcher<{ data: any }>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
+  changePassword: (token: string, oldPassword: string, newPassword: string) =>
+    fetcher<{ message: string; data?: { requireRelogin?: boolean } }>('/auth/change-password', {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    }),
 };
 
 // ─── CMS Posts ────────────────────────────────────────────────
