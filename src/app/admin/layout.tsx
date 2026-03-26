@@ -57,7 +57,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const token = getToken();
     if (!token) { router.replace('/admin/login'); return; }
     const userData = getUserFromToken(token);
-    if (!userData || !['SUPER_ADMIN', 'ADMIN_CMS', 'ADMIN_PPDB', 'KEPALA_SEKOLAH'].includes(userData.role)) {
+    // Updated Role access checking: using ADMIN_HUMAS and ADMIN_PERSONALIA
+    if (!userData || !['SUPER_ADMIN', 'ADMIN_HUMAS', 'ADMIN_PERSONALIA', 'KEPALA_SEKOLAH'].includes(userData.role)) {
       router.replace('/admin/login'); return;
     }
     setUser(userData);
@@ -68,6 +69,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (pathname === '/admin/login') return <>{children}</>;
 
   const handleLogout = () => { removeToken(); router.push('/admin/login'); };
+
+  const role = user?.role;
+  const showCMS = role && ['SUPER_ADMIN', 'ADMIN_HUMAS'].includes(role);
+  const showPPDB = role && ['SUPER_ADMIN', 'ADMIN_HUMAS'].includes(role);
+  const showAttendance = role && ['SUPER_ADMIN', 'ADMIN_PERSONALIA', 'KEPALA_SEKOLAH'].includes(role);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#F9FAFB' }}>
@@ -95,94 +101,102 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Navigation */}
         <nav style={{ flex: 1, padding: '1rem 0.75rem', overflow: 'auto' }}>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>CMS</div>
-          {navItems.map(item => {
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
-            return (
-              <Link key={item.href} href={item.href} style={{
-                display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.65rem 0.75rem', borderRadius: 8, marginBottom: '0.15rem',
-                background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
-                textDecoration: 'none', fontSize: 13, fontWeight: isActive ? 600 : 400,
-                transition: 'all 0.15s',
-                borderLeft: isActive ? '3px solid #C9A84C' : '3px solid transparent',
-              }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
+          {showCMS && (
+            <>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>CMS</div>
+              {navItems.map(item => {
+                const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
+                return (
+                  <Link key={item.href} href={item.href} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.75rem',
+                    padding: '0.65rem 0.75rem', borderRadius: 8, marginBottom: '0.15rem',
+                    background: isActive ? 'rgba(255,255,255,0.12)' : 'transparent',
+                    color: isActive ? '#fff' : 'rgba(255,255,255,0.65)',
+                    textDecoration: 'none', fontSize: 13, fontWeight: isActive ? 600 : 400,
+                    transition: 'all 0.15s',
+                    borderLeft: isActive ? '3px solid #C9A84C' : '3px solid transparent',
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </>
+          )}
 
           {/* Accordion PPDB */}
-          <div style={{ marginTop: '0.5rem' }}>
-            <button 
-              onClick={() => setOpenAccordion(openAccordion === 'ppdb' ? null : 'ppdb')}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0.65rem 0.75rem', borderRadius: 8, background: 'transparent', border: 'none',
-                color: pathname.startsWith('/admin/ppdb') ? '#fff' : 'rgba(255,255,255,0.65)',
-                cursor: 'pointer', fontSize: 13, fontWeight: pathname.startsWith('/admin/ppdb') ? 600 : 500,
-                transition: 'all 0.2s', borderLeft: pathname.startsWith('/admin/ppdb') ? '3px solid #C9A84C' : '3px solid transparent',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>group_add</span>
-                Manajemen PPDB
-              </div>
-              <span className="material-symbols-outlined" style={{ fontSize: 18, transform: openAccordion === 'ppdb' ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
-            </button>
-            {openAccordion === 'ppdb' && (
-              <div style={{ paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
-                {ppdbItems.map(item => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link key={item.href} href={item.href} style={{
-                      display: 'block', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: 12,
-                      color: isActive ? '#F2D98A' : 'rgba(255,255,255,0.5)', background: isActive ? 'rgba(201,168,76,0.1)' : 'transparent',
-                      textDecoration: 'none', marginBottom: '0.1rem', fontWeight: isActive ? 600 : 400,
-                    }}>
-                      • {item.label}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          {showPPDB && (
+            <div style={{ marginTop: '0.5rem' }}>
+              <button 
+                onClick={() => setOpenAccordion(openAccordion === 'ppdb' ? null : 'ppdb')}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '0.65rem 0.75rem', borderRadius: 8, background: 'transparent', border: 'none',
+                  color: pathname.startsWith('/admin/ppdb') ? '#fff' : 'rgba(255,255,255,0.65)',
+                  cursor: 'pointer', fontSize: 13, fontWeight: pathname.startsWith('/admin/ppdb') ? 600 : 500,
+                  transition: 'all 0.2s', borderLeft: pathname.startsWith('/admin/ppdb') ? '3px solid #C9A84C' : '3px solid transparent',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>group_add</span>
+                  Manajemen PPDB
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: 18, transform: openAccordion === 'ppdb' ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
+              </button>
+              {openAccordion === 'ppdb' && (
+                <div style={{ paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
+                  {ppdbItems.map(item => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link key={item.href} href={item.href} style={{
+                        display: 'block', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: 12,
+                        color: isActive ? '#F2D98A' : 'rgba(255,255,255,0.5)', background: isActive ? 'rgba(201,168,76,0.1)' : 'transparent',
+                        textDecoration: 'none', marginBottom: '0.1rem', fontWeight: isActive ? 600 : 400,
+                      }}>
+                        • {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Accordion Absensi */}
-          <div style={{ marginTop: '0.25rem' }}>
-            <button 
-              onClick={() => setOpenAccordion(openAccordion === 'attendance' ? null : 'attendance')}
-              style={{
-                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0.65rem 0.75rem', borderRadius: 8, background: 'transparent', border: 'none',
-                color: pathname.startsWith('/admin/attendance') ? '#fff' : 'rgba(255,255,255,0.65)',
-                cursor: 'pointer', fontSize: 13, fontWeight: pathname.startsWith('/admin/attendance') ? 600 : 500,
-                transition: 'all 0.2s', borderLeft: pathname.startsWith('/admin/attendance') ? '3px solid #C9A84C' : '3px solid transparent',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20 }}>co_present</span>
-                Kehadiran Staf
-              </div>
-              <span className="material-symbols-outlined" style={{ fontSize: 18, transform: openAccordion === 'attendance' ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
-            </button>
-            {openAccordion === 'attendance' && (
-              <div style={{ paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
-                {attendanceItems.map(item => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link key={item.href} href={item.href} style={{
-                      display: 'block', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: 12,
-                      color: isActive ? '#F2D98A' : 'rgba(255,255,255,0.5)', background: isActive ? 'rgba(201,168,76,0.1)' : 'transparent',
-                      textDecoration: 'none', marginBottom: '0.1rem', fontWeight: isActive ? 600 : 400,
-                    }}>
-                      • {item.label}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          {showAttendance && (
+            <div style={{ marginTop: '0.25rem' }}>
+              <button 
+                onClick={() => setOpenAccordion(openAccordion === 'attendance' ? null : 'attendance')}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '0.65rem 0.75rem', borderRadius: 8, background: 'transparent', border: 'none',
+                  color: pathname.startsWith('/admin/attendance') ? '#fff' : 'rgba(255,255,255,0.65)',
+                  cursor: 'pointer', fontSize: 13, fontWeight: pathname.startsWith('/admin/attendance') ? 600 : 500,
+                  transition: 'all 0.2s', borderLeft: pathname.startsWith('/admin/attendance') ? '3px solid #C9A84C' : '3px solid transparent',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20 }}>co_present</span>
+                  Kehadiran Staf
+                </div>
+                <span className="material-symbols-outlined" style={{ fontSize: 18, transform: openAccordion === 'attendance' ? 'rotate(180deg)' : 'rotate(0)' }}>expand_more</span>
+              </button>
+              {openAccordion === 'attendance' && (
+                <div style={{ paddingLeft: '1.5rem', marginTop: '0.25rem' }}>
+                  {attendanceItems.map(item => {
+                    const isActive = pathname === item.href;
+                    return (
+                      <Link key={item.href} href={item.href} style={{
+                        display: 'block', padding: '0.5rem 0.75rem', borderRadius: 6, fontSize: 12,
+                        color: isActive ? '#F2D98A' : 'rgba(255,255,255,0.5)', background: isActive ? 'rgba(201,168,76,0.1)' : 'transparent',
+                        textDecoration: 'none', marginBottom: '0.1rem', fontWeight: isActive ? 600 : 400,
+                      }}>
+                        • {item.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Pengaturan Section */}
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1.5rem' }}>Pengaturan</div>

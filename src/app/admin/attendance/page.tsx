@@ -44,12 +44,9 @@ export default function AdminAttendancePage() {
       
       // Also fetch anomalies count for admin
       if (user && ['SUPER_ADMIN', 'KEPALA_SEKOLAH', 'ADMIN_PERSONALIA'].includes(user.role)) {
-        const { api } = await import('@/lib/api');
-        const anomalyRes = await api.get('/attendance/logs/anomalies', {
-           headers: { Authorization: `Bearer ${token}` }
-        });
-        if (anomalyRes.data?.data) {
-           setAnomaliesCount(anomalyRes.data.data.length);
+        const anomalyRes = await attendanceApi.getAnomalyLogs(token);
+        if (anomalyRes.data?.logs) {
+           setAnomaliesCount(anomalyRes.data.logs.length);
         }
       }
     } catch (err: any) { 
