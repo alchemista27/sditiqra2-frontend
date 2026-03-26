@@ -37,7 +37,7 @@ export default function AbsenLayout({ children }: { children: React.ReactNode })
     
     const userData = getUserFromToken(token);
     // Semua user dengan role yg terdaftar bisa akses fitur absen, utama KARYAWAN
-    if (!userData || !['SUPER_ADMIN', 'ADMIN_CMS', 'ADMIN_PPDB', 'KEPALA_SEKOLAH', 'KARYAWAN'].includes(userData.role)) {
+    if (!userData || !['SUPER_ADMIN', 'KEPALA_SEKOLAH', 'KARYAWAN'].includes(userData.role)) {
       removeToken();
       router.replace('/absen/login'); 
       return;
