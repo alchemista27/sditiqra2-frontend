@@ -20,7 +20,7 @@ export default function CetakKelasPage({ params }: { params: Promise<{ id: strin
       if (!token) return;
       const [classRes, allRegsRes] = await Promise.all([
         ppdbAdminApi.getClassrooms(token),
-        ppdbAdminApi.getAll(token, { limit: 500 })
+        ppdbAdminApi.getAll(token, { limit: '500' })
       ]);
       
       const foundClass = classRes.data?.find((c: any) => c.id === classroomId);
