@@ -37,7 +37,7 @@ export default function AdminKelasPage() {
     try {
       const [classRes, regRes] = await Promise.all([
         ppdbAdminApi.getClassrooms(token),
-        ppdbAdminApi.getAll(token, { limit: 500 }),
+        ppdbAdminApi.getAll(token, { limit: '500' }),
       ]);
       setClassrooms(classRes.data || []);
       
