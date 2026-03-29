@@ -370,7 +370,7 @@ export interface CloudinaryMedia {
 export const mediaApi = {
   getAll: (token: string, params?: Record<string, string>) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : '';
-    return fetcher<{ data: CloudinaryMedia[]; nextCursor?: string; totalCount?: number }>(`/cms/media${q}`, {
+    return fetcher<{ data: CloudinaryMedia[]; pagination?: { page: number; limit: number; total: number; totalPages: number } }>(`/cms/media${q}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
