@@ -21,7 +21,7 @@ export default function KlinikPage() {
   }, []);
 
   const status = registration?.status;
-  const canAccess = ['ADMIN_PASSED', 'CLINIC_LETTER_UPLOADED', 'OBSERVATION_SCHEDULED', 'OBSERVATION_DONE', 'ACCEPTED'].includes(status);
+  const canAccess = ['FORM_SUBMITTED', 'CLINIC_LETTER_UPLOADED', 'ADMIN_REVIEW', 'ADMIN_PASSED', 'OBSERVATION_SCHEDULED', 'OBSERVATION_DONE', 'ACCEPTED'].includes(status);
   const alreadyUploaded = !!registration?.docClinicCert;
 
   const handleDownload = async () => {
@@ -33,10 +33,8 @@ export default function KlinikPage() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `surat-pengantar-klinik-${registration?.registrationNo}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      a.href = url; a.download = `surat-pengantar-klinik-${registration?.registrationNo}.pdf`;
+      a.click(); URL.revokeObjectURL(url);
     } catch (e: any) { setError(e.message || 'Download gagal.'); }
     finally { setDownloading(false); }
   };
@@ -48,7 +46,7 @@ export default function KlinikPage() {
       const token = localStorage.getItem(PARENT_TOKEN_KEY)!;
       const res = await ppdbParentApi.uploadClinicCert(token, file) as any;
       if (res.success) {
-        setSuccess('Surat keterangan klinik berhasil diupload! Anda sekarang dapat memilih jadwal observasi.');
+        setSuccess('Surat keterangan klinik berhasil diupload! Menunggu verifikasi admin untuk seleksi administrasi.');
         setRegistration(res.data); setFile(null);
       } else setError(res.message);
     } catch (e: any) { setError(e.message); }
@@ -62,7 +60,7 @@ export default function KlinikPage() {
         <div style={{ fontSize: 36, marginBottom: '0.75rem' }}>🔒</div>
         <div style={{ fontWeight: 700, color: '#92400E' }}>Belum Bisa Diakses</div>
         <div style={{ color: '#78350F', fontSize: 14, marginTop: '0.5rem' }}>
-          Halaman ini hanya dapat diakses setelah Anda <strong>lulus seleksi administrasi</strong>.
+          Halaman ini hanya dapat diakses setelah Anda <strong>men-submit formulir dan berkas pendaftaran</strong>.
         </div>
       </div>
     </div>
@@ -72,7 +70,7 @@ export default function KlinikPage() {
     <div style={{ maxWidth: 680, margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '0.35rem' }}>Pemeriksaan Klinik IMC</h2>
       <p style={{ color: '#6B7280', marginBottom: '2rem', fontSize: 14 }}>
-        Selamat! Anda lulus seleksi administrasi. Langkah selanjutnya adalah pemeriksaan kesehatan.
+        Formulir berhasil disubmit. Langkah selanjutnya adalah melakukan pemeriksaan kesehatan di klinik.
       </p>
 
       {error && <div style={{ background: '#FEF2F2', borderRadius: 10, padding: '0.875rem', marginBottom: '1rem', color: '#DC2626', fontSize: 14 }}>{error}</div>}
@@ -100,14 +98,14 @@ export default function KlinikPage() {
 
       {/* Info klinik */}
       <div style={{ background: 'linear-gradient(135deg, #0F3D24, #1B6B44)', borderRadius: 16, padding: '1.5rem', marginBottom: '1.25rem', color: '#fff' }}>
-        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: '0.75rem' }}>🏥 Iqra Medical Clinic (IMC)</div>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: '0.75rem' }}><span className="material-symbols-outlined">local_hospital</span> Iqra Medical Clinic (IMC)</div>
         <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.7 }}>
-          📍 Jl. Adam Malik No. 1, Kota Bengkulu<br />
-          🕐 Jam Operasional: Senin–Sabtu, 08.00–16.00 WIB<br />
-          📞 Hubungi klinik untuk info lebih lanjut
+          <span className="material-symbols-outlined">location_on</span> Jl. Adam Malik No. 1, Kota Bengkulu<br />
+          <span className="material-symbols-outlined">schedule</span> Jam Operasional: Senin–Sabtu, 08.00–16.00 WIB<br />
+          <span className="material-symbols-outlined">phone</span> Hubungi klinik untuk info lebih lanjut
         </div>
         <div style={{ marginTop: '0.75rem', background: 'rgba(201,168,76,0.2)', borderRadius: 8, padding: '0.75rem', fontSize: 13, color: '#F2D98A' }}>
-          💡 Bawa surat pengantar yang sudah didownload saat datang ke klinik
+          <span className="material-symbols-outlined">lightbulb</span> Bawa surat pengantar yang sudah didownload saat datang ke klinik
         </div>
       </div>
 
@@ -115,25 +113,34 @@ export default function KlinikPage() {
       <div style={{ background: '#fff', borderRadius: 16, padding: '1.75rem', border: `1.5px solid ${alreadyUploaded ? '#6EE7B7' : '#E5E7EB'}` }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: alreadyUploaded ? '#D1FAE5' : '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: alreadyUploaded ? '#065F46' : '#6B7280', flexShrink: 0 }}>
-            {alreadyUploaded ? '✅' : '2'}
+            {alreadyUploaded ? <span className="material-symbols-outlined">check_circle</span> : '2'}
           </div>
           <div>
             <div style={{ fontWeight: 700, color: '#111827', marginBottom: '0.25rem' }}>Upload Surat Keterangan dari IMC</div>
             <div style={{ fontSize: 14, color: '#6B7280' }}>
               {alreadyUploaded
-                ? 'Surat keterangan sudah diupload. Anda dapat memilih jadwal observasi.'
+                ? 'Surat keterangan sudah diupload. Jadwal observasi dapat dipilih setelah lulus seleksi administrasi.'
                 : 'Setelah pemeriksaan, upload surat keterangan kesehatan yang diberikan oleh IMC.'}
             </div>
           </div>
         </div>
 
         {alreadyUploaded ? (
-          <a href={registration?.docClinicCert} target="_blank" rel="noopener noreferrer" style={{
-            display: 'block', textAlign: 'center', padding: '0.75rem', borderRadius: 10,
-            background: '#F0F9F4', color: '#1B6B44', textDecoration: 'none', fontSize: 14, fontWeight: 600,
-          }}>
-            Lihat surat keterangan yang diupload →
-          </a>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <a href={registration?.docClinicCert} target="_blank" rel="noopener noreferrer" style={{
+              display: 'block', textAlign: 'center', padding: '0.75rem', borderRadius: 10,
+              background: '#F0F9F4', color: '#1B6B44', textDecoration: 'none', fontSize: 14, fontWeight: 600,
+            }}>
+              Lihat surat keterangan yang diupload
+            </a>
+            <button onClick={() => window.location.href = '/ppdb/portal/status'} style={{
+              width: '100%', padding: '0.875rem', borderRadius: 12, border: 'none',
+              background: 'linear-gradient(135deg, #1B6B44, #2D9164)', color: '#fff',
+              fontWeight: 700, fontSize: 15, cursor: 'pointer',
+            }}>
+              Cek Hasil Seleksi Administrasi →
+            </button>
+          </div>
         ) : (
           <>
             <div onClick={() => fileRef.current?.click()} style={{
@@ -141,10 +148,10 @@ export default function KlinikPage() {
               textAlign: 'center', cursor: 'pointer', background: file ? '#F0F9F4' : '#FAFAFA', marginBottom: '1rem',
             }}>
               {file ? (
-                <div style={{ fontSize: 14, color: '#1B6B44', fontWeight: 600 }}>📄 {file.name}</div>
+                <div style={{ fontSize: 14, color: '#1B6B44', fontWeight: 600 }}><span className="material-symbols-outlined">description</span> {file.name}</div>
               ) : (
                 <>
-                  <div style={{ fontSize: 32, marginBottom: '0.5rem' }}>📄</div>
+                  <div style={{ fontSize: 32, marginBottom: '0.5rem' }}><span className="material-symbols-outlined">description</span></div>
                   <div style={{ fontSize: 14, color: '#6B7280' }}>Klik untuk pilih file surat keterangan</div>
                   <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: '0.25rem' }}>PDF / JPG — Maks. 5 MB</div>
                 </>

@@ -35,6 +35,7 @@ export default function AdminPPDBPage() {
   const [stats, setStats] = useState<any>(null);
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [academicYears, setAcademicYears] = useState<any[]>([]);
+  const [classrooms, setClassrooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -56,6 +57,12 @@ export default function AdminPPDBPage() {
   const [settingsForm, setSettingsForm] = useState({ ppdb_bank_name: '', ppdb_account_no: '', ppdb_account_name: '' });
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [settingsMsg, setSettingsMsg] = useState('');
+
+  // Purge confirmation modal
+  const [purgeTarget, setPurgeTarget] = useState<any | null>(null);
+  const [purgeConfirmText, setPurgeConfirmText] = useState('');
+  const [purging, setPurging] = useState(false);
+  const [purgeMsg, setPurgeMsg] = useState('');
 
   const token = getToken() || '';
 
@@ -114,6 +121,13 @@ export default function AdminPPDBPage() {
     else if (tab === 'settings') loadSettings();
   }, [tab, loadDashboard, loadRegistrations, loadAcademicYears, loadSettings]);
 
+  useEffect(() => {
+    const fetchClassrooms = async () => {
+      try { const res = await ppdbAdminApi.getClassrooms(token); setClassrooms(res.data || []); } catch {}
+    };
+    if (token) fetchClassrooms();
+  }, [token]);
+
   const saveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSettingsLoading(true); setSettingsMsg('');
@@ -157,6 +171,29 @@ export default function AdminPPDBPage() {
     finally { setActionLoading(false); }
   };
 
+  const recordObservation = async (id: string, passed: boolean) => {
+    setActionLoading(true);
+    try {
+      const note = passed ? (prompt('Catatan hasil observasi (opsional):') || '') : (prompt('Alasan penolakan observasi:') || 'Tidak lulus tahap observasi');
+      await ppdbAdminApi.recordObservationResult(token, id, { result: passed ? 'PASSED' : 'FAILED', note });
+      setActionMsg(passed ? 'SUCCESS: Hasil observasi dan kelulusan pendaftar berhasil dicatat.' : 'ERROR: Pendaftar dinyatakan tidak lulus.');
+      await openDetail(id);
+      loadRegistrations();
+    } catch (e: any) { setActionMsg('Error: ' + e.message); }
+    finally { setActionLoading(false); }
+  };
+
+  const assignClass = async (id: string, classroomId: string) => {
+    setActionLoading(true);
+    try {
+      await ppdbAdminApi.assignClassroom(token, id, classroomId);
+      setActionMsg('SUCCESS: Siswa berhasil disetujui, diterima, dan ditempatkan di kelas tersebut.');
+      await openDetail(id);
+      loadRegistrations();
+    } catch (e: any) { setActionMsg('Error: ' + e.message); }
+    finally { setActionLoading(false); }
+  };
+
   const createAY = async (e: React.FormEvent) => {
     e.preventDefault();
     setAySubmitting(true);
@@ -173,6 +210,18 @@ export default function AdminPPDBPage() {
     if (!confirm('Jadikan tahun ajaran ini aktif?')) return;
     try { await academicYearsApi.setActive(token, id); loadAcademicYears(); }
     catch (e: any) { setError(e.message); }
+  };
+
+  const purgeYear = async () => {
+    if (!purgeTarget || purgeConfirmText !== purgeTarget.name) return;
+    setPurging(true);
+    try {
+      await academicYearsApi.purge(token, purgeTarget.id);
+      setPurgeMsg(`✅ Tahun ajaran "${purgeTarget.name}" dan seluruh datanya berhasil dihapus.`);
+      setPurgeTarget(null); setPurgeConfirmText('');
+      loadAcademicYears();
+    } catch (e: any) { setPurgeMsg('❌ ' + e.message); }
+    finally { setPurging(false); }
   };
 
   // ── Filtered list ──
@@ -249,7 +298,7 @@ export default function AdminPPDBPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
             {[
               { label: 'Verifikasi Pembayaran', desc: 'Review bukti transfer', icon: 'payments', tab: 'payments', urgent: (stats?.pendingPayment ?? 0) > 0 },
-              { label: 'Seleksi Administrasi', desc: 'Review formulir & berkas', icon: 'assignment_turned_in', tab: 'registrations', urgent: (stats?.formSubmitted ?? 0) > 0 },
+              { label: 'Seleksi Administrasi', desc: 'Review formulir & berkas', icon: 'assignment_turned_in', tab: 'registrations', urgent: (stats?.clinicUploaded ?? 0) > 0 },
               { label: 'Jadwal Observasi', desc: 'Kelola slot observasi', icon: 'event', tab: 'registrations', urgent: false },
             ].map(action => (
               <button key={action.label} onClick={() => setTab(action.tab)} style={{
@@ -323,7 +372,7 @@ export default function AdminPPDBPage() {
               <option value="">Semua Status</option>
               {tab === 'payments'
                 ? ['PAYMENT_UPLOADED', 'PAYMENT_VERIFIED', 'PENDING_PAYMENT'].map(s => <option key={s} value={s}>{STATUS_LABELS[s]?.label}</option>)
-                : ['FORM_SUBMITTED', 'ADMIN_REVIEW', 'ADMIN_PASSED', 'REJECTED'].map(s => <option key={s} value={s}>{STATUS_LABELS[s]?.label}</option>)
+                : ['FORM_SUBMITTED', 'CLINIC_LETTER_UPLOADED', 'ADMIN_REVIEW', 'ADMIN_PASSED', 'OBSERVATION_SCHEDULED', 'OBSERVATION_DONE', 'ACCEPTED', 'REJECTED'].map(s => <option key={s} value={s}>{STATUS_LABELS[s]?.label}</option>)
               }
             </select>
             <button onClick={tab === 'payments' ? loadRegistrations : loadRegistrations} style={{ padding: '0.6rem 1rem', borderRadius: 10, background: '#1B6B44', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
@@ -430,11 +479,17 @@ export default function AdminPPDBPage() {
                       }
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      {!ay.isActive && (
-                        <button onClick={() => setActiveAY(ay.id)} style={{ padding: '0.3rem 0.7rem', background: '#C9A84C', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                          Aktifkan
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {!ay.isActive && (
+                          <button onClick={() => setActiveAY(ay.id)} style={{ padding: '0.3rem 0.7rem', background: '#C9A84C', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                            Aktifkan
+                          </button>
+                        )}
+                        <button onClick={() => { setPurgeTarget(ay); setPurgeConfirmText(''); setPurgeMsg(''); }}
+                          style={{ padding: '0.3rem 0.7rem', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FCA5A5', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                          Hapus Permanen
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -495,6 +550,56 @@ export default function AdminPPDBPage() {
                 {settingsLoading ? 'Menyimpan...' : <><span className="material-symbols-outlined" style={{ fontSize: 18, marginRight: '0.5rem' }}>save</span> Simpan Pengaturan Rekening</>}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── PURGE CONFIRMATION MODAL ── */}
+      {purgeTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: '#fff', borderRadius: 20, padding: '2rem', maxWidth: 480, width: '100%', border: '3px solid #FCA5A5' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 32, color: '#DC2626' }}>warning</span>
+              <div style={{ fontWeight: 800, fontSize: 18, color: '#DC2626' }}>Hapus Permanen — Tidak Dapat Dibatalkan</div>
+            </div>
+            <p style={{ color: '#374151', fontSize: 14, marginBottom: '0.75rem' }}>
+              Anda akan menghapus <strong>Tahun Ajaran {purgeTarget.name}</strong> beserta:
+            </p>
+            <ul style={{ color: '#6B7280', fontSize: 13, paddingLeft: '1.25rem', marginBottom: '1.25rem', lineHeight: 1.8 }}>
+              <li>Semua data pendaftar ({purgeTarget._count?.registrations ?? 0} orang)</li>
+              <li>Semua berkas/dokumen yang diupload ke Cloudinary</li>
+              <li>Semua kelas paralel dan slot jadwal observasi</li>
+            </ul>
+            <div style={{ background: '#FEF2F2', borderRadius: 10, padding: '0.875rem', marginBottom: '1.25rem', fontSize: 13, color: '#991B1B' }}>
+              ⚠️ Tindakan ini <strong>tidak dapat dibatalkan</strong>. Seluruh data akan hilang permanen.
+            </div>
+
+            {purgeMsg && (
+              <div style={{ background: purgeMsg.startsWith('✅') ? '#D1FAE5' : '#FEF2F2', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', fontSize: 13, color: purgeMsg.startsWith('✅') ? '#065F46' : '#DC2626' }}>
+                {purgeMsg}
+              </div>
+            )}
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>
+                Ketik <strong>{purgeTarget.name}</strong> untuk konfirmasi:
+              </label>
+              <input
+                value={purgeConfirmText}
+                onChange={e => setPurgeConfirmText(e.target.value)}
+                placeholder={purgeTarget.name}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: 8, border: '2px solid #FCA5A5', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button onClick={() => { setPurgeTarget(null); setPurgeConfirmText(''); setPurgeMsg(''); }}
+                style={{ flex: 1, padding: '0.75rem', background: '#F3F4F6', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 600 }}>Batal</button>
+              <button onClick={purgeYear} disabled={purging || purgeConfirmText !== purgeTarget.name}
+                style={{ flex: 1, padding: '0.75rem', background: (purging || purgeConfirmText !== purgeTarget.name) ? '#9CA3AF' : '#DC2626', color: '#fff', border: 'none', borderRadius: 10, cursor: (purging || purgeConfirmText !== purgeTarget.name) ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
+                {purging ? 'Menghapus...' : 'Hapus Semua Data'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -585,18 +690,6 @@ export default function AdminPPDBPage() {
                   </div>
                 ))}
 
-                {detailReg.status === 'FORM_SUBMITTED' && (
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-                    <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
-                      Lulus Administrasi
-                    </button>
-                    <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>
-                      Tolak
-                    </button>
-                  </div>
-                )}
               </Section>
             )}
 
@@ -609,20 +702,74 @@ export default function AdminPPDBPage() {
               </Section>
             )}
 
+            {/* Tombol aksi */}
+            {['CLINIC_LETTER_UPLOADED', 'ADMIN_REVIEW'].includes(detailReg.status) && (
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', background: '#F9FAFB', padding: '1rem', borderRadius: 12, border: '1px solid #E5E7EB' }}>
+                <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
+                  Lulus Administrasi
+                </button>
+                <button disabled={actionLoading} onClick={() => reviewAdmin(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>
+                  Tolak
+                </button>
+              </div>
+            )}
+
             {/* Observasi */}
             {detailReg.observationSlot && (
               <Section title="Jadwal Observasi">
                 <InfoRow label="Tanggal" val={fmtDate(detailReg.observationSlot.date)} />
                 <InfoRow label="Waktu" val={`${detailReg.observationSlot.startTime} – ${detailReg.observationSlot.endTime} WIB`} />
+                {detailReg.observationResult && (
+                  <div style={{ marginTop: '0.75rem', padding: '0.75rem', borderRadius: 8, background: detailReg.observationResult === 'PASSED' ? '#D1FAE5' : '#FEE2E2', color: detailReg.observationResult === 'PASSED' ? '#065F46' : '#B91C1C', fontSize: 13, fontWeight: 600 }}>
+                    Status Observasi: {detailReg.observationResult === 'PASSED' ? 'LULUS' : 'TIDAK LULUS'}
+                    {detailReg.observationNote && <div style={{ fontSize: 12, fontWeight: 400, marginTop: '0.2rem' }}>Catatan: {detailReg.observationNote}</div>}
+                  </div>
+                )}
               </Section>
             )}
 
-            {/* Kelas */}
-            {detailReg.classroom && (
-              <Section title="Kelas yang Ditetapkan">
-                <div style={{ fontSize: 28, fontWeight: 800, color: '#1B6B44' }}>{detailReg.classroom.name}</div>
-              </Section>
+            {/* Tombol Aksi Observasi */}
+            {['OBSERVATION_SCHEDULED', 'OBSERVATION_DONE'].includes(detailReg.status) && (
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', background: '#F9FAFB', padding: '1rem', borderRadius: 12, border: '1px solid #E5E7EB' }}>
+                <button disabled={actionLoading} onClick={() => recordObservation(detailReg.id, true)} style={{ flex: 1, padding: '0.75rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>check_circle</span>
+                  Nyatakan Lulus
+                </button>
+                <button disabled={actionLoading} onClick={() => recordObservation(detailReg.id, false)} style={{ flex: 1, padding: '0.75rem', background: '#FEE2E2', color: '#B91C1C', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 18 }}>cancel</span>
+                  Tolak
+                </button>
+              </div>
             )}
+
+            {/* Kelas & Penugasan */}
+            {detailReg.classroom ? (
+              <Section title="Kelas yang Ditetapkan">
+                <div style={{ fontSize: 28, fontWeight: 800, color: '#1B6B44', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 32 }}>meeting_room</span>
+                  {detailReg.classroom.name}
+                </div>
+              </Section>
+            ) : detailReg.status === 'OBSERVATION_DONE' && detailReg.observationResult === 'PASSED' ? (
+              <Section title="Tugaskan ke Kelas">
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <select id="assign_class_select" style={{ flex: 1, padding: '0.75rem', borderRadius: 10, border: '1.5px solid #E5E7EB', fontSize: 14 }}>
+                    <option value="">-- Pilih Kelas --</option>
+                    {classrooms.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} (Terisi: {c._count?.registrations ?? 0}/{c.maxStudents})</option>
+                    ))}
+                  </select>
+                  <button disabled={actionLoading} onClick={() => {
+                    const sel = (document.getElementById('assign_class_select') as HTMLSelectElement).value;
+                    if (sel) assignClass(detailReg.id, sel);
+                  }} style={{ padding: '0.75rem 1.5rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>
+                    Tugaskan & Terima
+                  </button>
+                </div>
+              </Section>
+            ) : null}
           </div>
         </div>
       )}

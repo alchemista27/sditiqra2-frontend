@@ -139,7 +139,7 @@ export default function AbsenLayout({ children }: { children: React.ReactNode })
         </nav>
 
         {/* Edit Password & Logout */}
-        <div style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ marginTop: 'auto', padding: '1rem 1rem 3.5rem', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <button
             onClick={() => setEditPwOpen(true)}
             style={{

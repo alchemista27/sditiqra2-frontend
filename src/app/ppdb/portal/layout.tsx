@@ -92,7 +92,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
   if (!loaded) return (
     <div style={{ minHeight: 'calc(100vh - 64px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center', color: '#1B6B44' }}>
-        <div style={{ fontSize: 32, marginBottom: '0.5rem' }}>⏳</div>
+        <div style={{ fontSize: 32, marginBottom: '0.5rem' }}><span className="material-symbols-outlined">hourglass_empty</span></div>
         <div style={{ fontWeight: 600 }}>Memuat portal...</div>
       </div>
     </div>
@@ -140,7 +140,13 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
           {STEPS.map((step, i) => {
             const isCompleted = i < currentStep;
             const isCurrent = i === currentStep;
-            const isLocked = i > currentStep && currentStatus !== 'ACCEPTED';
+            let isLocked = i > currentStep && currentStatus !== 'ACCEPTED';
+            
+            // Allow access to Upload Berkas (step index 2) right after payment is verified (when filling formulir)
+            if (currentStatus === 'PAYMENT_VERIFIED' && i === 2) isLocked = false;
+            // The Hasil / Status Dashboard (step index 5) must always be accessible
+            if (i === 5) isLocked = false;
+
             const isActive = pathname === step.href || pathname.startsWith(step.href + '/');
 
             return (

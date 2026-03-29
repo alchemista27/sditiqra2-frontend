@@ -35,6 +35,7 @@ const settingsItems = [
   { href: '/admin/menu', icon: 'menu', label: 'Menu Navigasi' },
   { href: '/admin/settings/general', icon: 'tune', label: 'Pengaturan Umum' },
   { href: '/admin/settings/homepage', icon: 'web', label: 'Editor Homepage' },
+  { href: '/admin/settings/instagram', icon: 'photo_camera', label: 'Instagram' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

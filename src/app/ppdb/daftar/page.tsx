@@ -68,7 +68,7 @@ export default function PpdbDaftarPage() {
 
           {error && (
             <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '0.875rem 1rem', marginBottom: '1.25rem', color: '#DC2626', fontSize: 14, display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-              <span style={{ flexShrink: 0 }}>⚠️</span> {error}
+              <span className="material-symbols-outlined" style={{ flexShrink: 0 }}>warning</span> {error}
             </div>
           )}
 

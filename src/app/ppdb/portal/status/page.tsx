@@ -7,24 +7,24 @@ import { ppdbParentApi } from '@/lib/api';
 const PARENT_TOKEN_KEY = 'sditiqra2_parent_token';
 
 const STATUS_CONFIG: Record<string, { icon: string; title: string; desc: string; color: string; bg: string; border: string }> = {
-  PENDING_PAYMENT:        { icon: '⏳', title: 'Menunggu Pembayaran', desc: 'Silakan lakukan transfer dan upload buktinya.', color: '#92400E', bg: '#FEF3C7', border: '#FCD34D' },
-  PAYMENT_UPLOADED:       { icon: '🔍', title: 'Verifikasi Pembayaran', desc: 'Bukti transfer sedang diverifikasi oleh admin (maks. 1×24 jam kerja).', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
-  PAYMENT_VERIFIED:       { icon: '✅', title: 'Pembayaran Terverifikasi', desc: 'Silakan isi formulir biodata dan upload berkas pendaftaran.', color: '#1D4ED8', bg: '#DBEAFE', border: '#93C5FD' },
-  FORM_SUBMITTED:         { icon: '📥', title: 'Formulir Disubmit', desc: 'Formulir sedang diproses oleh admin.', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
-  ADMIN_REVIEW:           { icon: '🔎', title: 'Sedang Diseleksi Admin', desc: 'Dokumen Anda sedang dalam proses penelaahan oleh panitia.', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
-  ADMIN_PASSED:           { icon: '🎉', title: 'Lulus Seleksi Administrasi', desc: 'Selamat! Anda lulus seleksi administrasi. Silakan download surat pengantar klinik.', color: '#065F46', bg: '#D1FAE5', border: '#6EE7B7' },
-  CLINIC_LETTER_UPLOADED: { icon: '🏥', title: 'Surat Klinik Diupload', desc: 'Silakan pilih jadwal observasi.', color: '#065F46', bg: '#D1FAE5', border: '#6EE7B7' },
-  OBSERVATION_SCHEDULED:  { icon: '📅', title: 'Jadwal Observasi Sudah Dipilih', desc: 'Hadir tepat waktu sesuai jadwal yang telah dipilih.', color: '#1D4ED8', bg: '#DBEAFE', border: '#93C5FD' },
-  OBSERVATION_DONE:       { icon: '🔄', title: 'Observasi Selesai', desc: 'Hasil observasi sedang diproses oleh panitia.', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
-  ACCEPTED:               { icon: '🏆', title: 'DITERIMA!', desc: 'Selamat! Calon siswa diterima di SD IT Iqra 2 Bengkulu.', color: '#065F46', bg: '#D1FAE5', border: '#34D399' },
-  REJECTED:               { icon: '😢', title: 'Tidak Diterima', desc: 'Mohon maaf, pendaftaran tidak dapat dilanjutkan.', color: '#B91C1C', bg: '#FEE2E2', border: '#FECACA' },
+  PENDING_PAYMENT:        { icon: 'hourglass_empty', title: 'Menunggu Pembayaran', desc: 'Silakan lakukan transfer dan upload buktinya.', color: '#92400E', bg: '#FEF3C7', border: '#FCD34D' },
+  PAYMENT_UPLOADED:       { icon: 'search', title: 'Verifikasi Pembayaran', desc: 'Bukti transfer sedang diverifikasi oleh admin (maks. 1×24 jam kerja).', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
+  PAYMENT_VERIFIED:       { icon: 'check_circle', title: 'Pembayaran Terverifikasi', desc: 'Silakan isi formulir biodata dan upload berkas pendaftaran.', color: '#1D4ED8', bg: '#DBEAFE', border: '#93C5FD' },
+  FORM_SUBMITTED:         { icon: 'local_hospital', title: 'Formulir Disubmit', desc: 'Silakan mengunduh surat pengantar dan upload hasil pemeriksaan klinik.', color: '#1D4ED8', bg: '#DBEAFE', border: '#93C5FD' },
+  CLINIC_LETTER_UPLOADED: { icon: 'hourglass_empty', title: 'Surat Klinik Diupload', desc: 'Menunggu seleksi administrasi oleh panitia pendaftaran.', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
+  ADMIN_REVIEW:           { icon: 'visibility', title: 'Sedang Diseleksi Admin', desc: 'Dokumen Anda sedang ditelaah oleh panitia.', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
+  ADMIN_PASSED:           { icon: 'celebration', title: 'Lulus Seleksi Administrasi', desc: 'Selamat! Anda lulus seleksi administrasi. Silakan pilih jadwal observasi.', color: '#065F46', bg: '#D1FAE5', border: '#6EE7B7' },
+  OBSERVATION_SCHEDULED:  { icon: 'event', title: 'Jadwal Observasi Sudah Dipilih', desc: 'Hadir tepat waktu sesuai jadwal yang telah dipilih.', color: '#1D4ED8', bg: '#DBEAFE', border: '#93C5FD' },
+  OBSERVATION_DONE:       { icon: 'sync', title: 'Observasi Selesai', desc: 'Hasil observasi sedang diproses oleh panitia.', color: '#5B21B6', bg: '#EDE9FE', border: '#C4B5FD' },
+  ACCEPTED:               { icon: 'emoji_events', title: 'DITERIMA!', desc: 'Selamat! Calon siswa diterima di SD IT Iqra 2 Bengkulu.', color: '#065F46', bg: '#D1FAE5', border: '#34D399' },
+  REJECTED:               { icon: 'sentiment_dissatisfied', title: 'Tidak Diterima', desc: 'Mohon maaf, pendaftaran tidak dapat dilanjutkan.', color: '#B91C1C', bg: '#FEE2E2', border: '#FECACA' },
 };
 
 const PROGRESS_STEPS = [
   { key: 'PAYMENT', label: 'Pembayaran', statuses: ['PENDING_PAYMENT', 'PAYMENT_UPLOADED', 'PAYMENT_VERIFIED'] },
-  { key: 'FORM', label: 'Formulir', statuses: ['FORM_SUBMITTED', 'ADMIN_REVIEW'] },
-  { key: 'SELECTION', label: 'Seleksi Admin', statuses: ['ADMIN_PASSED'] },
+  { key: 'FORM', label: 'Formulir', statuses: ['FORM_SUBMITTED'] },
   { key: 'CLINIC', label: 'Klinik', statuses: ['CLINIC_LETTER_UPLOADED'] },
+  { key: 'SELECTION', label: 'Seleksi Admin', statuses: ['ADMIN_REVIEW', 'ADMIN_PASSED'] },
   { key: 'OBSERVATION', label: 'Observasi', statuses: ['OBSERVATION_SCHEDULED', 'OBSERVATION_DONE'] },
   { key: 'RESULT', label: 'Hasil', statuses: ['ACCEPTED', 'REJECTED'] },
 ];
@@ -34,7 +34,7 @@ function getCurrentStepIndex(status: string): number {
     if (PROGRESS_STEPS[i].statuses.includes(status)) return i;
     // Cek apakah status sudah melewati step ini
     const allPrevStatuses = PROGRESS_STEPS.slice(0, i + 1).flatMap(s => s.statuses);
-    const allStatuses = ['PENDING_PAYMENT', 'PAYMENT_UPLOADED', 'PAYMENT_VERIFIED', 'FORM_SUBMITTED', 'ADMIN_REVIEW', 'ADMIN_PASSED', 'CLINIC_LETTER_UPLOADED', 'OBSERVATION_SCHEDULED', 'OBSERVATION_DONE', 'ACCEPTED', 'REJECTED'];
+    const allStatuses = ['PENDING_PAYMENT', 'PAYMENT_UPLOADED', 'PAYMENT_VERIFIED', 'FORM_SUBMITTED', 'CLINIC_LETTER_UPLOADED', 'ADMIN_REVIEW', 'ADMIN_PASSED', 'OBSERVATION_SCHEDULED', 'OBSERVATION_DONE', 'ACCEPTED', 'REJECTED'];
     const statusIdx = allStatuses.indexOf(status);
     const stepLastStatusIdx = allStatuses.indexOf(PROGRESS_STEPS[i].statuses[PROGRESS_STEPS[i].statuses.length - 1]);
     if (statusIdx > stepLastStatusIdx) return i + 1;
@@ -58,7 +58,7 @@ export default function StatusPage() {
 
   if (!registration) return (
     <div style={{ textAlign: 'center', padding: '3rem' }}>
-      <div style={{ fontSize: 48, marginBottom: '1rem' }}>📋</div>
+      <div style={{ fontSize: 48, marginBottom: '1rem' }}><span className="material-symbols-outlined">assignment</span></div>
       <div style={{ fontWeight: 700 }}>Belum ada pendaftaran</div>
       <Link href="/ppdb/portal/pembayaran" style={{ color: '#1B6B44', fontWeight: 600 }}>Mulai daftar →</Link>
     </div>
@@ -82,7 +82,7 @@ export default function StatusPage() {
         background: config.bg, border: `2px solid ${config.border}`,
         borderRadius: 20, padding: '2rem', marginBottom: '1.5rem', textAlign: 'center',
       }}>
-        <div style={{ fontSize: isAccepted ? 64 : 48, marginBottom: '1rem' }}>{config.icon}</div>
+        <div style={{ fontSize: isAccepted ? 64 : 48, marginBottom: '1rem' }}><span className="material-symbols-outlined">{config.icon}</span></div>
         <div style={{ fontWeight: 800, fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', color: config.color, marginBottom: '0.5rem' }}>
           {config.title}
         </div>
@@ -128,7 +128,7 @@ export default function StatusPage() {
                   color: isDone ? '#fff' : isCurrent ? '#1B6B44' : '#9CA3AF',
                   boxShadow: isCurrent ? '0 0 0 4px rgba(27,107,68,0.15)' : 'none',
                 }}>
-                  {isDone ? '✓' : i + 1}
+                  {isDone ? <span className="material-symbols-outlined">check</span> : i + 1}
                 </div>
                 <div style={{ fontSize: 11, fontWeight: isCurrent || isDone ? 600 : 400, color: isCurrent || isDone ? '#1B6B44' : '#9CA3AF', textAlign: 'center', lineHeight: 1.3 }}>
                   {step.label}
@@ -166,12 +166,12 @@ export default function StatusPage() {
             Isi Formulir →
           </Link>
         )}
-        {status === 'ADMIN_PASSED' && (
+        {status === 'FORM_SUBMITTED' && (
           <Link href="/ppdb/portal/klinik" style={{ flex: 1, padding: '0.875rem', background: '#1B6B44', color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, textAlign: 'center' }}>
-            Download Surat Klinik →
+            Ke Tahap Klinik →
           </Link>
         )}
-        {status === 'CLINIC_LETTER_UPLOADED' && (
+        {status === 'ADMIN_PASSED' && (
           <Link href="/ppdb/portal/observasi" style={{ flex: 1, padding: '0.875rem', background: '#1B6B44', color: '#fff', borderRadius: 12, textDecoration: 'none', fontWeight: 700, fontSize: 14, textAlign: 'center' }}>
             Pilih Jadwal Observasi →
           </Link>

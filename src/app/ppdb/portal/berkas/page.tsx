@@ -1,6 +1,7 @@
 'use client';
 // src/app/ppdb/portal/berkas/page.tsx — Upload 6 berkas + submit formulir
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import { ppdbParentApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -60,7 +61,7 @@ export default function BerkasPage() {
       const token = localStorage.getItem(PARENT_TOKEN_KEY)!;
       const res = await ppdbParentApi.submitForm(token) as any;
       if (res.success) {
-        setSuccess('Formulir berhasil disubmit! Admin akan melakukan seleksi administrasi.');
+        setSuccess('Formulir berhasil disubmit! Silakan unduh surat pengantar dan lakukan pemeriksaan klinik.');
         await loadRegistration();
         setTimeout(() => router.push('/ppdb/portal/status'), 1500);
       } else setError(res.message);
@@ -77,7 +78,7 @@ export default function BerkasPage() {
 
       {!canUpload && !isLocked && (
         <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: '0.75rem' }}>🔒</div>
+          <div style={{ fontSize: 36, marginBottom: '0.75rem' }}><span className="material-symbols-outlined">lock</span></div>
           <div style={{ fontWeight: 700, color: '#92400E' }}>Belum Bisa Upload</div>
           <div style={{ color: '#78350F', fontSize: 14, marginTop: '0.5rem' }}>Selesaikan pembayaran dan tunggu verifikasi admin terlebih dahulu.</div>
         </div>
@@ -105,7 +106,7 @@ export default function BerkasPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     {uploaded
-                      ? <span style={{ color: '#059669', fontSize: 24 }}>✅</span>
+                      ? <span style={{ color: '#059669', fontSize: 24 }}><span className="material-symbols-outlined">check_circle</span></span>
                       : <span className="material-symbols-outlined" style={{ fontSize: 24, color: '#9CA3AF' }}>{doc.icon}</span>
                     }
                   </div>
@@ -134,7 +135,7 @@ export default function BerkasPage() {
                         fontSize: 13, fontWeight: 600, color: uploaded ? '#1B6B44' : '#374151', flexShrink: 0,
                       }}
                     >
-                      {isLoading ? '⏳' : uploaded ? 'Ganti' : 'Upload'}
+                      {isLoading ? <span className="material-symbols-outlined">hourglass_empty</span> : uploaded ? 'Ganti' : 'Upload'}
                     </button>
                   )}
                   <input
@@ -155,20 +156,38 @@ export default function BerkasPage() {
               <span style={{ fontWeight: 600, color: '#111827' }}>Kelengkapan Berkas</span>
               <span style={{ color: '#1B6B44', fontWeight: 700 }}>{DOCS.filter(d => registration?.[d.key]).length} / {DOCS.length}</span>
             </div>
-            <div style={{ background: '#F3F4F6', borderRadius: 100, height: 8, overflow: 'hidden' }}>
+            <div style={{ background: '#F3F4F6', borderRadius: 100, height: 8, overflow: 'hidden', marginBottom: '1.25rem' }}>
               <div style={{ height: '100%', borderRadius: 100, background: 'linear-gradient(90deg, #1B6B44, #2D9164)', width: `${(DOCS.filter(d => registration?.[d.key]).length / DOCS.length) * 100}%`, transition: 'width 0.4s ease' }} />
             </div>
 
-            {canUpload && allUploaded && (
-              <button id="submit-form-btn" onClick={handleSubmit} disabled={submitting} style={{
-                marginTop: '1.25rem', width: '100%', padding: '0.875rem', borderRadius: 12, border: 'none',
-                background: submitting ? '#9CA3AF' : 'linear-gradient(135deg, #0F3D24, #1B6B44)',
-                color: '#fff', fontWeight: 700, fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 12px rgba(27,107,68,0.3)',
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <Link href="/ppdb/portal/formulir" style={{
+                flex: 1, padding: '0.875rem', borderRadius: 12, border: '2px solid #E5E7EB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: '#F9FAFB', color: '#374151', fontWeight: 600, fontSize: 15, textAlign: 'center', textDecoration: 'none', minWidth: '150px'
               }}>
-                {submitting ? 'Menyubmit...' : '✅ Submit Formulir Pendaftaran'}
-              </button>
-            )}
+                ← Kembali ke Biodata
+              </Link>
+              
+              {canUpload && allUploaded && (
+                <button id="submit-form-btn" onClick={handleSubmit} disabled={submitting} style={{
+                  flex: 2, padding: '0.875rem', borderRadius: 12, border: 'none',
+                  background: submitting ? '#9CA3AF' : 'linear-gradient(135deg, #0F3D24, #1B6B44)',
+                  color: '#fff', fontWeight: 700, fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer', minWidth: '200px'
+                }}>
+                  {submitting ? 'Menyubmit...' : 'Submit Formulir Pendaftaran'}
+                </button>
+              )}
+
+              {isLocked && (
+                 <Link href="/ppdb/portal/klinik" style={{
+                  flex: 2, padding: '0.875rem', borderRadius: 12, border: '2px solid #1B6B44', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#F0F9F4', color: '#1B6B44', fontWeight: 700, fontSize: 15, textAlign: 'center', textDecoration: 'none', minWidth: '200px'
+                }}>
+                  Lanjut ke Surat Klinik →
+                 </Link>
+              )}
+            </div>
+
             {canUpload && !allUploaded && (
               <div style={{ marginTop: '0.75rem', fontSize: 13, color: '#9CA3AF', textAlign: 'center' }}>
                 Upload semua {DOCS.length} berkas untuk mengaktifkan tombol submit

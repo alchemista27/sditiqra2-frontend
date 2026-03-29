@@ -20,25 +20,25 @@ export default function AdminMediaPage() {
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<CloudinaryMedia | null>(null);
   const [view, setView] = useState<ViewMode>('grid');
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [copied, setCopied] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const fetchMedia = useCallback(async (cursor?: string) => {
+  const fetchMedia = useCallback(async (p = 1) => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { max_results: '40' };
-      if (cursor) params.next_cursor = cursor;
-      const r = await mediaApi.getAll(getToken()!, params);
-      setMedia(prev => cursor ? [...prev, ...r.data] : r.data);
-      setNextCursor(r.nextCursor || null);
-      setTotal(r.totalCount || r.data.length);
+      const r = await mediaApi.getAll(getToken()!, { page: String(p), limit: '40' });
+      setMedia(r.data || []);
+      setTotal(r.pagination?.total || r.data.length);
+      setTotalPages(r.pagination?.totalPages || 1);
+      setPage(p);
     } catch (err) { console.error(err); }
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchMedia(); }, [fetchMedia]);
+  useEffect(() => { fetchMedia(1); }, [fetchMedia]);
 
   const handleUpload = async (files: FileList) => {
     setUploading(true);
@@ -46,7 +46,7 @@ export default function AdminMediaPage() {
       for (const file of Array.from(files)) {
         await mediaApi.upload(getToken()!, file, 'media');
       }
-      await fetchMedia();
+      await fetchMedia(1);
     } catch { alert('Upload gagal.'); }
     setUploading(false);
   };
@@ -75,7 +75,9 @@ export default function AdminMediaPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 800, color: '#111827' }}>Media Library</h1>
-            <p style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{total} file di Cloudinary</p>
+            <p style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>
+              {total} file · hanya dari Admin Humas &amp; Super Admin
+            </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {/* View toggle */}
@@ -161,11 +163,12 @@ export default function AdminMediaPage() {
             </div>
           )}
 
-          {nextCursor && (
-            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-              <button onClick={() => fetchMedia(nextCursor)} disabled={loading} style={{ padding: '0.65rem 2rem', background: '#F3F4F6', border: 'none', borderRadius: 12, fontWeight: 600, fontSize: 14, cursor: 'pointer', color: '#374151' }}>
-                {loading ? 'Memuat...' : 'Muat Lebih Banyak'}
-              </button>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ textAlign: 'center', marginTop: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+              <button onClick={() => fetchMedia(page - 1)} disabled={page <= 1 || loading} style={{ padding: '0.5rem 1rem', background: '#F3F4F6', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: page <= 1 ? 'not-allowed' : 'pointer', opacity: page <= 1 ? 0.4 : 1 }}>←</button>
+              <span style={{ padding: '0.5rem 1rem', fontSize: 13, color: '#374151' }}>Hal {page} / {totalPages}</span>
+              <button onClick={() => fetchMedia(page + 1)} disabled={page >= totalPages || loading} style={{ padding: '0.5rem 1rem', background: '#F3F4F6', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: page >= totalPages ? 'not-allowed' : 'pointer', opacity: page >= totalPages ? 0.4 : 1 }}>→</button>
             </div>
           )}
         </div>

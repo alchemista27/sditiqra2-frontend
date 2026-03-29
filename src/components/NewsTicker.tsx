@@ -17,6 +17,24 @@ export default function NewsTicker() {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
   const [locationName, setLocationName] = useState<string>("Bengkulu"); // Default location
   const [loadingPrayer, setLoadingPrayer] = useState<boolean>(true);
+  const [showTicker, setShowTicker] = useState<boolean>(true);
+
+  // 3. Hide News Ticker when Footer is visible (Intersection Observer)
+  useEffect(() => {
+    const footer = document.querySelector('footer');
+    if (!footer) return;
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Hide ticker when footer is visible (top of footer enters viewport)
+        setShowTicker(!entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+    
+    observer.observe(footer);
+    return () => observer.disconnect();
+  }, []);
 
   // 1. Fetch Latest News
   useEffect(() => {
@@ -116,7 +134,7 @@ export default function NewsTicker() {
   const nextPrayer = getNextPrayer();
 
   return (
-    <div className="fixed bottom-0 left-0 w-full z-[9999] flex flex-col md:flex-row bg-[#0F3D24] text-white shadow-[0_-4px_20px_rgba(0,0,0,0.2)]">
+    <div className={`fixed bottom-0 left-0 w-full z-[9999] flex flex-col md:flex-row bg-[#0F3D24] text-white shadow-[0_-4px_20px_rgba(0,0,0,0.2)] transition-transform duration-300 ${showTicker ? 'translate-y-0' : 'translate-y-full'}`}>
       
       {/* LEFT SIDE: Running Text News Ticker */}
       <div className="flex-1 flex items-center overflow-hidden border-b md:border-b-0 md:border-r border-white/10 h-9 md:h-10">

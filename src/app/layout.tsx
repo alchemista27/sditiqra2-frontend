@@ -11,14 +11,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
   try {
     const res = await settingsApi.getAll();
-    const settings: Record<string, string> = res.data;
+    const settings: Record<string, string> = res?.data || {};
     if (settings.site_name) siteName = settings.site_name;
     if (settings.site_tagline) description = settings.site_tagline;
     if (settings.site_favicon) {
       faviconUrl = settings.site_favicon.startsWith('http') ? settings.site_favicon : `${API_BASE}${settings.site_favicon}`;
     }
   } catch (error) {
-    console.error('Failed to fetch settings for metadata:', error);
+    // Silent fail - use default values
   }
 
   const icons = faviconUrl ? { icon: faviconUrl, shortcut: faviconUrl, apple: faviconUrl } : undefined;

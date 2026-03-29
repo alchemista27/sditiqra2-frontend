@@ -82,7 +82,7 @@ export default function PpdbLandingPage() {
 
           {activeYear && (
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', marginBottom: '2rem' }}>
-              📅 {new Date(activeYear.registrationStart).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              <span className="material-symbols-outlined">event</span> {new Date(activeYear.registrationStart).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
               {' — '}
               {new Date(activeYear.registrationEnd).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
               {activeYear.quota > 0 && ` · Kuota: ${activeYear.quota} siswa`}

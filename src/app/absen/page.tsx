@@ -2,7 +2,7 @@
 // src/app/absen/page.tsx - Dashboard Absensi Utama
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '@/lib/auth';
+import { getToken, removeToken } from '@/lib/auth';
 import { attendanceApi, authApi } from '@/lib/api';
 
 // Simple haversine formula (Client-side fail-safe)
@@ -46,8 +46,12 @@ export default function AbsenDashboard() {
       setUser(uRes.data);
       setStatus(sRes.data);
     } catch (err: any) {
-      console.error('Failed to load data:', err);
-      if (err.status === 401) router.replace('/absen/login');
+      if (err.status === 401) {
+        removeToken();
+        router.replace('/absen/login');
+      } else {
+        console.error('Failed to load data:', err);
+      }
     } finally {
       setLoading(false);
     }

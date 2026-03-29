@@ -69,6 +69,7 @@ export const academicYearsApi = {
   update: (token: string, id: string, data: any) => fetcher(`/ppdb/academic-years/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
   setActive: (token: string, id: string) => fetcher(`/ppdb/academic-years/${id}/active`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } }),
   delete: (token: string, id: string) => fetcher(`/ppdb/academic-years/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+  purge: (token: string, id: string) => fetcher(`/ppdb/academic-years/${id}/purge`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
 };
 
 // ─── PPDB PORTAL ORANG TUA ────────────────────────────────────
@@ -174,6 +175,8 @@ export const ppdbAdminApi = {
     fetcher(`/ppdb/admin/classrooms/${id}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` }, body: JSON.stringify(data) }),
   deleteClassroom: (token: string, id: string) =>
     fetcher(`/ppdb/admin/classrooms/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+  downloadClassRosterPdf: (token: string, id: string) =>
+    fetch(`${API_URL}/ppdb/admin/classrooms/${id}/pdf`, { headers: { Authorization: `Bearer ${token}` } }),
 
   // Pengaturan PPDB (rekening bank)
   getPpdbSettings: () =>
@@ -388,6 +391,15 @@ export const mediaApi = {
   remove: (token: string, publicId: string) =>
     fetcher(`/cms/media?id=${encodeURIComponent(publicId)}`, {
       method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+};
+
+// ─── INSTAGRAM AUTO-POST (Make.com) ────────────────────────────
+export const instagramApi = {
+  testConnection: (token: string) =>
+    fetcher<{ data: { connected: boolean } }>('/cms/settings/instagram/test', {
+      method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     }),
 };

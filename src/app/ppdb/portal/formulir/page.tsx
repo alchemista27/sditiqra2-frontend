@@ -2,6 +2,7 @@
 // src/app/ppdb/portal/formulir/page.tsx
 // Formulir biodata siswa (Tab 1) dan biodata orang tua (Tab 2)
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { ppdbParentApi } from '@/lib/api';
 
 const PARENT_TOKEN_KEY = 'sditiqra2_parent_token';
@@ -15,6 +16,15 @@ const INCOME_OPTIONS = [
   { val: '5000000-10000000', label: 'Rp 5.000.000 – Rp 10.000.000' },
   { val: '>10000000', label: 'Di atas Rp 10.000.000' },
 ];
+
+const Field = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
+  <div>
+    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>
+      {label} {req && <span style={{ color: '#DC2626' }}>*</span>}
+    </label>
+    {children}
+  </div>
+);
 
 export default function FormulirPage() {
   const [activeTab, setActiveTab] = useState<'siswa' | 'ortu'>('siswa');
@@ -103,20 +113,11 @@ export default function FormulirPage() {
     cursor: disabled ? 'not-allowed' : 'text',
   });
 
-  const Field = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
-    <div>
-      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>
-        {label} {req && <span style={{ color: '#DC2626' }}>*</span>}
-      </label>
-      {children}
-    </div>
-  );
-
   if (loading) return <div style={{ textAlign: 'center', padding: '3rem', color: '#1B6B44', fontWeight: 600 }}>Memuat formulir...</div>;
 
   if (!canFill && !isLocked) return (
     <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
-      <div style={{ fontSize: 40, marginBottom: '1rem' }}>🔒</div>
+      <div style={{ fontSize: 40, marginBottom: '1rem' }}><span className="material-symbols-outlined">lock</span></div>
       <div style={{ fontWeight: 700, color: '#92400E', fontSize: 17 }}>Formulir Belum Bisa Diakses</div>
       <div style={{ color: '#78350F', fontSize: 14, marginTop: '0.5rem' }}>
         Selesaikan pembayaran dan tunggu verifikasi admin terlebih dahulu.
@@ -133,7 +134,7 @@ export default function FormulirPage() {
 
       {isLocked && (
         <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1.5rem', color: '#065F46', fontSize: 14 }}>
-          ✅ Formulir berhasil disubmit. Data tidak dapat diubah.
+          <span className="material-symbols-outlined">check_circle</span> Formulir berhasil disubmit. Data tidak dapat diubah.
         </div>
       )}
 
@@ -151,7 +152,7 @@ export default function FormulirPage() {
             boxShadow: activeTab === tab ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
             transition: 'all 0.2s',
           }}>
-            {tab === 'siswa' ? '👦 Biodata Calon Siswa' : '👨‍👩‍👧 Biodata Orang Tua / Wali'}
+            {tab === 'siswa' ? <span className="material-symbols-outlined mr-1">face</span> : <span className="material-symbols-outlined mr-1">group</span>}{tab === 'siswa' ? 'Biodata Calon Siswa' : 'Biodata Orang Tua / Wali'}
           </button>
         ))}
       </div>
@@ -221,15 +222,25 @@ export default function FormulirPage() {
             )}
           </div>
 
-          {!isLocked && (
-            <button id="save-student-btn" onClick={saveStudent} disabled={saving} style={{
-              padding: '0.875rem', borderRadius: 12, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-              background: saving ? '#9CA3AF' : 'linear-gradient(135deg, #1B6B44, #2D9164)',
-              color: '#fff', fontWeight: 700, fontSize: 15,
-            }}>
-              {saving ? 'Menyimpan...' : 'Simpan Biodata Siswa'}
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            {!isLocked && (
+              <button id="save-student-btn" onClick={saveStudent} disabled={saving} style={{
+                flex: 1, padding: '0.875rem', borderRadius: 12, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+                background: saving ? '#9CA3AF' : 'linear-gradient(135deg, #1B6B44, #2D9164)',
+                color: '#fff', fontWeight: 700, fontSize: 15, minWidth: '200px'
+              }}>
+                {saving ? 'Menyimpan...' : 'Simpan Biodata Siswa'}
+              </button>
+            )}
+            {registration && registration.studentName && (
+              <button onClick={() => setActiveTab('ortu')} style={{
+                flex: 1, padding: '0.875rem', borderRadius: 12, border: '2px solid #1B6B44', cursor: 'pointer',
+                background: '#F0FDF4', color: '#1B6B44', fontWeight: 700, fontSize: 15, minWidth: '200px'
+              }}>
+                Lanjut ke Biodata Orang Tua →
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -239,7 +250,7 @@ export default function FormulirPage() {
           {/* Ayah */}
           <div style={{ marginBottom: '2rem' }}>
             <div style={{ fontWeight: 700, color: '#1B6B44', fontSize: 15, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              👨 Data Ayah
+              <span className="material-symbols-outlined">man</span> Data Ayah
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -266,7 +277,7 @@ export default function FormulirPage() {
 
           {/* Ibu */}
           <div style={{ marginBottom: '2rem' }}>
-            <div style={{ fontWeight: 700, color: '#1B6B44', fontSize: 15, marginBottom: '1rem' }}>👩 Data Ibu</div>
+            <div style={{ fontWeight: 700, color: '#1B6B44', fontSize: 15, marginBottom: '1rem' }}><span className="material-symbols-outlined">woman</span> Data Ibu</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <Field label="Nama Lengkap" req><input id="f-motherName" style={inputStyle(!!isLocked)} disabled={!!isLocked} value={parentData.motherName} onChange={e => setParentData(p => ({ ...p, motherName: e.target.value }))} placeholder="Nama lengkap ibu" /></Field>
@@ -292,11 +303,11 @@ export default function FormulirPage() {
           <div style={{ marginBottom: '1.5rem' }}>
             {!showGuardian ? (
               <button onClick={() => setShowGuardian(true)} disabled={!!isLocked} style={{ background: '#F3F4F6', border: 'none', borderRadius: 10, padding: '0.65rem 1.25rem', cursor: 'pointer', fontSize: 14, color: '#374151', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                ➕ Tambah Data Wali (Opsional)
+                <span className="material-symbols-outlined">add</span> Tambah Data Wali (Opsional)
               </button>
             ) : (
               <>
-                <div style={{ fontWeight: 700, color: '#1B6B44', fontSize: 15, marginBottom: '1rem' }}>👤 Data Wali (Opsional)</div>
+                <div style={{ fontWeight: 700, color: '#1B6B44', fontSize: 15, marginBottom: '1rem' }}><span className="material-symbols-outlined">person</span> Data Wali (Opsional)</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <Field label="Nama Wali"><input id="f-guardianName" style={inputStyle(!!isLocked)} disabled={!!isLocked} value={parentData.guardianName} onChange={e => setParentData(p => ({ ...p, guardianName: e.target.value }))} placeholder="Nama lengkap wali" /></Field>
@@ -311,15 +322,26 @@ export default function FormulirPage() {
             )}
           </div>
 
-          {!isLocked && (
-            <button id="save-parent-btn" onClick={saveParent} disabled={saving} style={{
-              width: '100%', padding: '0.875rem', borderRadius: 12, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
-              background: saving ? '#9CA3AF' : 'linear-gradient(135deg, #1B6B44, #2D9164)',
-              color: '#fff', fontWeight: 700, fontSize: 15,
-            }}>
-              {saving ? 'Menyimpan...' : 'Simpan Biodata Orang Tua / Wali'}
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            {!isLocked && (
+              <button id="save-parent-btn" onClick={saveParent} disabled={saving} style={{
+                flex: 1, padding: '0.875rem', borderRadius: 12, border: 'none', cursor: saving ? 'not-allowed' : 'pointer',
+                background: saving ? '#9CA3AF' : 'linear-gradient(135deg, #1B6B44, #2D9164)',
+                color: '#fff', fontWeight: 700, fontSize: 15, minWidth: '200px'
+              }}>
+                {saving ? 'Menyimpan...' : 'Simpan Biodata Orang Tua / Wali'}
+              </button>
+            )}
+            {registration && registration.fatherName && registration.motherName && (
+              <Link href="/ppdb/portal/berkas" style={{
+                flex: 1, padding: '0.875rem', borderRadius: 12, border: '2px solid #1B6B44', 
+                background: '#F0FDF4', color: '#1B6B44', fontWeight: 700, fontSize: 15, 
+                textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '200px'
+              }}>
+                Lanjut ke Upload Berkas →
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </div>

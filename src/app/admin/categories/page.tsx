@@ -44,7 +44,7 @@ export default function AdminCategoriesPage() {
         {/* Form Tambah */}
         <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '1.5rem' }}>
           <h2 style={{ fontSize: 15, fontWeight: 700, marginBottom: '1rem', color: '#111827' }}>Tambah Kategori Baru</h2>
-          {error && <div style={{ background: '#FEF2F2', color: '#DC2626', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: 13 }}>⚠️ {error}</div>}
+          {error && <div style={{ background: '#FEF2F2', color: '#DC2626', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: 13 }}><span className="material-symbols-outlined">warning</span> {error}</div>}
           <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: '0.4rem' }}>Nama Kategori *</label>

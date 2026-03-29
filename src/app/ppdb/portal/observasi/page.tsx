@@ -22,7 +22,7 @@ export default function ObservasiPage() {
   }, []);
 
   const status = registration?.status;
-  const canBook = status === 'CLINIC_LETTER_UPLOADED';
+  const canBook = status === 'ADMIN_PASSED';
   const alreadyBooked = ['OBSERVATION_SCHEDULED', 'OBSERVATION_DONE', 'ACCEPTED'].includes(status);
 
   const handleBook = async () => {
@@ -43,10 +43,10 @@ export default function ObservasiPage() {
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#111827', marginBottom: '0.35rem' }}>Jadwal Observasi</h2>
       <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 16, padding: '2rem', textAlign: 'center', marginTop: '1.5rem' }}>
-        <div style={{ fontSize: 36, marginBottom: '0.75rem' }}>🔒</div>
+        <div style={{ fontSize: 36, marginBottom: '0.75rem' }}><span className="material-symbols-outlined">lock</span></div>
         <div style={{ fontWeight: 700, color: '#92400E' }}>Belum Bisa Diakses</div>
         <div style={{ color: '#78350F', fontSize: 14, marginTop: '0.5rem' }}>
-          Upload surat keterangan dari klinik IMC terlebih dahulu untuk memilih jadwal observasi.
+          Anda harus dinyatakan lulus seleksi administrasi terlebih dahulu untuk dapat memilih jadwal observasi.
         </div>
       </div>
     </div>
@@ -70,11 +70,11 @@ export default function ObservasiPage() {
             {new Date(registration.observationSlot.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
           <div style={{ fontSize: 18, color: '#F2D98A', fontWeight: 600 }}>
-            🕐 {registration.observationSlot.startTime} – {registration.observationSlot.endTime} WIB
+            <span className="material-symbols-outlined mr-1">schedule</span> {registration.observationSlot.startTime} – {registration.observationSlot.endTime} WIB
           </div>
           {registration.observationSlot.note && (
             <div style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: '0.75rem', fontSize: 14 }}>
-              📋 {registration.observationSlot.note}
+              <span className="material-symbols-outlined mr-1">assignment</span> {registration.observationSlot.note}
             </div>
           )}
           <div style={{ marginTop: '1rem', fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
@@ -88,7 +88,7 @@ export default function ObservasiPage() {
         <>
           {slots.length === 0 && (
             <div style={{ background: '#F9FAFB', borderRadius: 16, padding: '3rem', textAlign: 'center', color: '#6B7280' }}>
-              <div style={{ fontSize: 40, marginBottom: '1rem' }}>📅</div>
+              <div style={{ fontSize: 40, marginBottom: '1rem' }}><span className="material-symbols-outlined">event</span></div>
               <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Belum Ada Jadwal Tersedia</div>
               <div style={{ fontSize: 14 }}>Admin akan menambahkan jadwal observasi segera. Cek kembali nanti.</div>
             </div>
@@ -123,7 +123,7 @@ export default function ObservasiPage() {
                       {new Date(slot.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
                     <div style={{ fontSize: 14, color: '#6B7280', marginTop: '0.15rem' }}>
-                      🕐 {slot.startTime} – {slot.endTime} WIB
+                      <span className="material-symbols-outlined mr-1">schedule</span> {slot.startTime} – {slot.endTime} WIB
                       {slot.note && ` · ${slot.note}`}
                     </div>
                   </div>
@@ -150,7 +150,7 @@ export default function ObservasiPage() {
           {showConfirm && (
             <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
               <div style={{ background: '#fff', borderRadius: 20, padding: '2rem', maxWidth: 400, width: '100%', textAlign: 'center' }}>
-                <div style={{ fontSize: 40, marginBottom: '1rem' }}>📅</div>
+                <div style={{ fontSize: 40, marginBottom: '1rem' }}><span className="material-symbols-outlined">event</span></div>
                 <h3 style={{ fontWeight: 800, color: '#111827', marginBottom: '0.5rem' }}>Konfirmasi Jadwal</h3>
                 {(() => {
                   const slot = slots.find(s => s.id === selectedSlot);

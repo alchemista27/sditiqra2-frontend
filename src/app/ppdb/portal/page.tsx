@@ -37,7 +37,7 @@ export default function PortalIndexPage() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
       <div style={{ textAlign: 'center', color: '#1B6B44' }}>
-        <div style={{ fontSize: 36, marginBottom: '0.5rem' }}>⏳</div>
+        <div style={{ fontSize: 36, marginBottom: '0.5rem' }}><span className="material-symbols-outlined">hourglass_empty</span></div>
         <div style={{ fontWeight: 600 }}>Mengarahkan ke halaman Anda...</div>
       </div>
     </div>

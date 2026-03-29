@@ -7,7 +7,8 @@ import { getToken } from '@/lib/auth';
 export default function AdminKelasPage() {
   const token = getToken() || '';
   const [classrooms, setClassrooms] = useState<any[]>([]);
-  const [pendingAssign, setPendingAssign] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
+  const [filterAssign, setFilterAssign] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ name: '', grade: 1, maxStudents: 30, homeroomTeacher: '' });
   const [submitting, setSubmitting] = useState(false);
@@ -15,18 +16,37 @@ export default function AdminKelasPage() {
   const [assignReg, setAssignReg] = useState<any | null>(null);
   const [selectedClass, setSelectedClass] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const downloadPdf = async (classroomId: string, classroomName: string) => {
+    setDownloadingId(classroomId);
+    try {
+      const res = await ppdbAdminApi.downloadClassRosterPdf(token, classroomId);
+      if (!res.ok) throw new Error('Gagal generate PDF');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `daftar-siswa-kelas-${classroomName}.pdf`;
+      a.click(); URL.revokeObjectURL(url);
+    } catch (e: any) { setMsg('Error: ' + e.message); }
+    finally { setDownloadingId(null); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [classRes, regRes] = await Promise.all([
         ppdbAdminApi.getClassrooms(token),
-        ppdbAdminApi.getAll(token, { status: 'ACCEPTED' }),
+        ppdbAdminApi.getAll(token, { limit: 500 }),
       ]);
       setClassrooms(classRes.data || []);
-      // Siswa yang ACCEPTED tapi belum punya kelas
-      const accepted = regRes.data?.data || [];
-      setPendingAssign(accepted.filter((r: any) => !r.classroomId));
+      
+      const allRegs = regRes.data?.data || [];
+      const graduates = allRegs.filter((r: any) => 
+        r.status === 'ACCEPTED' || 
+        (r.status === 'OBSERVATION_DONE' && r.observationResult === 'PASSED')
+      );
+      setStudents(graduates);
     } catch (e: any) { setMsg('Error: ' + e.message); }
     finally { setLoading(false); }
   }, [token]);
@@ -62,6 +82,12 @@ export default function AdminKelasPage() {
     try { await ppdbAdminApi.deleteClassroom(token, id); load(); }
     catch (e: any) { setMsg('Error: ' + e.message); }
   };
+
+  const filteredStudents = students.filter(r => {
+    if (filterAssign === 'ASSIGNED') return !!r.classroomId;
+    if (filterAssign === 'UNASSIGNED') return !r.classroomId;
+    return true; // ALL
+  });
 
   return (
     <div>
@@ -112,35 +138,46 @@ export default function AdminKelasPage() {
                       <div style={{ fontWeight: 700, fontSize: 18, color: '#1B6B44' }}>{c.name}</div>
                       <div style={{ fontSize: 12, color: '#6B7280' }}>
                         {c._count?.registrations ?? 0}/{c.maxStudents} siswa
-                        {c.homeroomTeacher && ` · ${c.homeroomTeacher}`}
+                        {c.homeroomTeacher && ` · Wali: ${c.homeroomTeacher}`}
                       </div>
                     </div>
-                    <button onClick={() => deleteClass(c.id)} style={{ padding: '0.3rem 0.65rem', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, cursor: 'pointer', fontSize: 11, color: '#DC2626', fontWeight: 700 }}>
-                      Hapus
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={() => downloadPdf(c.id, c.name)} disabled={downloadingId === c.id}
+                        style={{ padding: '0.35rem 0.65rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 6, cursor: downloadingId === c.id ? 'not-allowed' : 'pointer', fontSize: 11, color: '#166534', fontWeight: 700 }}>
+                        {downloadingId === c.id ? '...' : 'Unduh PDF'}
+                      </button>
+                      <button onClick={() => deleteClass(c.id)} style={{ padding: '0.35rem 0.65rem', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 6, cursor: 'pointer', fontSize: 11, color: '#DC2626', fontWeight: 700 }}>
+                        Hapus
+                      </button>
+                    </div>
                   </div>
                 ))
               }
             </div>
           </div>
 
-          {/* Siswa menunggu penugasan kelas */}
+          {/* List Siswa */}
           <div>
-            <div style={{ fontWeight: 700, color: '#111827', marginBottom: '1rem', fontSize: 15 }}>
-              Siswa Diterima — Belum Ditugaskan Kelas
-              {pendingAssign.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 700, color: '#111827', fontSize: 15 }}>
+                Siswa Lulus Observasi
                 <span style={{ marginLeft: '0.5rem', background: '#FEF3C7', color: '#92400E', borderRadius: 100, padding: '0.15rem 0.6rem', fontSize: 12, fontWeight: 700 }}>
-                  {pendingAssign.length}
+                  {filteredStudents.length}
                 </span>
-              )}
+              </div>
+              <select value={filterAssign} onChange={e => setFilterAssign(e.target.value)} style={{ padding: '0.4rem 0.75rem', borderRadius: 8, border: '1.5px solid #E5E7EB', outline: 'none', fontSize: 13, background: '#fff' }}>
+                <option value="ALL">Semua Siswa</option>
+                <option value="UNASSIGNED">Belum Ditugaskan</option>
+                <option value="ASSIGNED">Sudah Ditempatkan</option>
+              </select>
             </div>
 
-            {pendingAssign.length === 0
+            {filteredStudents.length === 0
               ? (
-                <div style={{ background: '#F0F9F4', borderRadius: 16, padding: '3rem', textAlign: 'center', color: '#1B6B44' }}>
-                  <div style={{ fontSize: 48, marginBottom: '0.75rem' }}>🎉</div>
-                  <div style={{ fontWeight: 700, fontSize: 16 }}>Semua Siswa Sudah Ditugaskan!</div>
-                  <div style={{ fontSize: 14, color: '#6B7280', marginTop: '0.35rem' }}>Tidak ada siswa yang menunggu penugasan kelas.</div>
+                <div style={{ background: '#F9FAFB', borderRadius: 16, padding: '3rem', textAlign: 'center', color: '#6B7280' }}>
+                  <div style={{ fontSize: 40, marginBottom: '0.75rem' }}>🎓</div>
+                  <div style={{ fontWeight: 700, fontSize: 16 }}>Tidak Ada Siswa</div>
+                  <div style={{ fontSize: 14, marginTop: '0.35rem' }}>Berdasarkan filter yang dipilih.</div>
                 </div>
               )
               : (
@@ -148,21 +185,24 @@ export default function AdminKelasPage() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                     <thead>
                       <tr style={{ background: '#F9FAFB' }}>
-                        {['Nama Siswa', 'Orang Tua', 'No. Reg', 'Aksi'].map(h => (
+                        {['Nama Siswa', 'Orang Tua', 'No. Reg', 'Kelas', 'Aksi'].map(h => (
                           <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', color: '#6B7280', fontWeight: 600, fontSize: 12, textTransform: 'uppercase' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {pendingAssign.map((r: any) => (
+                      {filteredStudents.map((r: any) => (
                         <tr key={r.id} style={{ borderTop: '1px solid #F3F4F6' }}>
                           <td style={{ padding: '1rem', fontWeight: 700, color: '#111827' }}>{r.studentName || '-'}</td>
                           <td style={{ padding: '1rem', color: '#6B7280', fontSize: 13 }}>{r.parent?.name || '-'}</td>
                           <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: 12, color: '#1B6B44' }}>{r.registrationNo}</td>
+                          <td style={{ padding: '1rem', fontWeight: 600, color: r.classroom ? '#065F46' : '#9CA3AF' }}>
+                            {r.classroom?.name || 'Belum ada'}
+                          </td>
                           <td style={{ padding: '1rem' }}>
-                            <button onClick={() => { setAssignReg(r); setSelectedClass(''); }}
+                            <button onClick={() => { setAssignReg(r); setSelectedClass(r.classroomId || ''); }}
                               style={{ padding: '0.4rem 0.875rem', background: 'linear-gradient(135deg, #1B6B44, #2D9164)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
-                              Tugaskan Kelas
+                              {r.classroom ? 'Ubah Kelas' : 'Tugaskan'}
                             </button>
                           </td>
                         </tr>

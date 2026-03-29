@@ -75,7 +75,7 @@ export default function AdminLoginPage() {
         <form onSubmit={handleSubmit}>
           {error && (
             <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14 }}>
-              ⚠️ {error}
+              <span className="material-symbols-outlined">warning</span> {error}
             </div>
           )}
 
