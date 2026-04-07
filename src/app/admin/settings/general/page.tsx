@@ -75,6 +75,119 @@ function ImageUploadCard({ label, currentUrl, onUpload, hint }: {
   );
 }
 
+interface QuickLink {
+  label: string;
+  url: string;
+  external: boolean;
+}
+
+function FooterQuickLinksEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [links, setLinks] = useState<QuickLink[]>([]);
+  const [newLabel, setNewLabel] = useState('');
+  const [newUrl, setNewUrl] = useState('');
+  const [newExternal, setNewExternal] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editUrl, setEditUrl] = useState('');
+  const [editExternal, setEditExternal] = useState(false);
+
+  useEffect(() => {
+    if (value) {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) setLinks(parsed);
+      } catch { setLinks([]); }
+    } else { setLinks([]); }
+  }, [value]);
+
+  const saveToParent = (newLinks: QuickLink[]) => {
+    setLinks(newLinks);
+    onChange(JSON.stringify(newLinks));
+  };
+
+  const handleAdd = () => {
+    if (!newLabel.trim() || !newUrl.trim()) return;
+    saveToParent([...links, { label: newLabel.trim(), url: newUrl.trim(), external: newExternal }]);
+    setNewLabel(''); setNewUrl(''); setNewExternal(false);
+  };
+
+  const handleDelete = (idx: number) => {
+    saveToParent(links.filter((_, i) => i !== idx));
+  };
+
+  const startEdit = (idx: number) => {
+    setEditingIndex(idx);
+    setEditLabel(links[idx].label);
+    setEditUrl(links[idx].url);
+    setEditExternal(links[idx].external);
+  };
+
+  const saveEdit = () => {
+    if (editingIndex === null) return;
+    const updated = [...links];
+    updated[editingIndex] = { label: editLabel.trim(), url: editUrl.trim(), external: editExternal };
+    saveToParent(updated);
+    setEditingIndex(null);
+  };
+
+  const quickUrls = ['/', '/berita', '/ppdb', '/galeri', '/halaman/tentang-kami'];
+
+  return (
+    <div>
+      {links.length > 0 && (
+        <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {links.map((link, idx) => (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', background: '#F9FAFB', borderRadius: 8, border: '1px solid #E5E7EB' }}>
+              {editingIndex === idx ? (
+                <>
+                  <input value={editLabel} onChange={e => setEditLabel(e.target.value)} placeholder="Label" style={{ flex: 1, padding: '0.4rem 0.6rem', border: '1px solid #D1D5DB', borderRadius: 6, fontSize: 13 }} />
+                  <input value={editUrl} onChange={e => setEditUrl(e.target.value)} placeholder="/path" style={{ flex: 1, padding: '0.4rem 0.6rem', border: '1px solid #D1D5DB', borderRadius: 6, fontSize: 13 }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: 12, color: '#6B7280', whiteSpace: 'nowrap' }}>
+                    <input type="checkbox" checked={editExternal} onChange={e => setEditExternal(e.target.checked)} style={{ accentColor: '#1B6B44' }} />External
+                  </label>
+                  <button onClick={saveEdit} style={{ padding: '0.3rem 0.6rem', background: '#1B6B44', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✓</button>
+                  <button onClick={() => setEditingIndex(null)} style={{ padding: '0.3rem 0.6rem', background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>✕</button>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#1B6B44' }}>link</span>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#111827' }}>{link.label}</span>
+                  <span style={{ flex: 1, fontSize: 12, color: '#6B7280', fontFamily: 'monospace' }}>{link.url}</span>
+                  {link.external && <span style={{ fontSize: 10, background: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.4rem', borderRadius: 4 }}>External</span>}
+                  <button onClick={() => startEdit(idx)} style={{ padding: '0.25rem 0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span></button>
+                  <button onClick={() => handleDelete(idx)} style={{ padding: '0.25rem 0.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626' }}><span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span></button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new form */}
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="Label menu" style={{ flex: '1 1 120px', padding: '0.6rem 0.8rem', border: '1.5px solid #E5E7EB', borderRadius: 8, fontSize: 13 }} />
+        <input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="/path" style={{ flex: '1 1 100px', padding: '0.6rem 0.8rem', border: '1.5px solid #E5E7EB', borderRadius: 8, fontSize: 13 }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: 12, color: '#6B7280', padding: '0.5rem' }}>
+          <input type="checkbox" checked={newExternal} onChange={e => setNewExternal(e.target.checked)} style={{ accentColor: '#1B6B44' }} />External
+        </label>
+        <button onClick={handleAdd} disabled={!newLabel.trim() || !newUrl.trim()} style={{ padding: '0.6rem 1rem', background: newLabel.trim() && newUrl.trim() ? '#1B6B44' : '#E5E7EB', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: newLabel.trim() && newUrl.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span> Tambah
+        </button>
+      </div>
+
+      {/* Quick URL suggestions */}
+      <div style={{ marginTop: '0.75rem' }}>
+        <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: '0.3rem' }}>Pintasan URL:</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+          {quickUrls.map(u => (
+            <button key={u} type="button" onClick={() => setNewUrl(u)} style={{ padding: '0.2rem 0.5rem', background: newUrl === u ? '#1B6B44' : '#F3F4F6', color: newUrl === u ? '#fff' : '#374151', border: 'none', borderRadius: 4, fontSize: 11, cursor: 'pointer', fontFamily: 'monospace' }}>{u}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminGeneralSettingsPage() {
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
@@ -152,7 +265,16 @@ export default function AdminGeneralSettingsPage() {
       {/* ─── Identitas Sekolah ───────────────────────── */}
       <SectionCard title="Identitas Sekolah" icon="school">
         <InputField label="Nama Sekolah" value={s('site_name')} onChange={set('site_name')} placeholder="SD Islam Terpadu Iqra 2" />
-        <InputField label="Tagline / Slogan" value={s('site_tagline')} onChange={set('site_tagline')} placeholder="Mewujudkan Generasi Islami..." />
+      </SectionCard>
+
+      {/* ─── Footer ─────────────────────────────────────── */}
+      <SectionCard title="Footer" icon="flag">
+        <InputField label="Teks Copyright" value={s('footer_copyright')} onChange={set('footer_copyright')} placeholder="Hak cipta dilindungi" hint="Teks di paling bawah footer" />
+      </SectionCard>
+
+      {/* ─── Menu Cepat Footer ────────────────────────── */}
+      <SectionCard title="Menu Cepat Footer" icon="link">
+        <FooterQuickLinksEditor value={s('footer_quick_links')} onChange={set('footer_quick_links')} />
       </SectionCard>
 
       {/* ─── Logo & Favicon ──────────────────────────── */}

@@ -20,6 +20,7 @@ export default async function Footer() {
 
   const siteName = settings.site_name || 'SD Islam Terpadu Iqra 2';
   const siteTagline = settings.site_tagline || 'Mewujudkan generasi Islami yang cerdas dan berakhlak mulia.';
+  const footerCopyright = settings.footer_copyright || `Hak cipta dilindungi`;
   const logoUrl = settings.site_logo || '';
   const email = settings.contact_email || '';
   const phone = settings.contact_phone || '';
@@ -34,13 +35,26 @@ export default async function Footer() {
 
   const hasSocial = facebook || instagram || youtube;
 
-  const footerLinks = menuItems.length > 0
-    ? menuItems.map(m => ({ href: m.url, label: m.label, external: m.openInNewTab }))
-    : [
-        { href: '/', label: 'Beranda', external: false },
-        { href: '/berita', label: 'Berita & Pengumuman', external: false },
-        { href: '/ppdb', label: 'Pendaftaran (PPDB)', external: false },
-      ];
+  let footerLinks: { href: string; label: string; external?: boolean }[] = [];
+  try {
+    const quickLinks = settings.footer_quick_links;
+    if (quickLinks) {
+      const parsed = JSON.parse(quickLinks);
+      if (Array.isArray(parsed)) {
+        footerLinks = parsed.map((l: any) => ({ href: l.url || l.href, label: l.label, external: l.external }));
+      }
+    }
+  } catch {}
+  
+  if (footerLinks.length === 0) {
+    footerLinks = menuItems.length > 0
+      ? menuItems.map(m => ({ href: m.url, label: m.label, external: m.openInNewTab }))
+      : [
+          { href: '/', label: 'Beranda', external: false },
+          { href: '/berita', label: 'Berita & Pengumuman', external: false },
+          { href: '/ppdb', label: 'Pendaftaran (PPDB)', external: false },
+        ];
+  }
 
   return (
     <footer style={{ background: '#0F3D24', color: '#fff', marginTop: 'auto' }}>
@@ -110,16 +124,16 @@ export default async function Footer() {
         {/* Kontak */}
         <div>
           <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: '1rem', color: '#C9A84C', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 1rem' }}>Kontak</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: 13, color: '#9CA3AF' }}>
-            {address && <p style={{ margin: 0 }}>📍 {address}</p>}
-            {phone && <p style={{ margin: 0 }}>📞 {phone}</p>}
-            {email && <p style={{ margin: 0 }}>✉️ <a href={`mailto:${email}`} style={{ color: '#9CA3AF', textDecoration: 'none' }}>{email}</a></p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: 13, color: '#9CA3AF' }}>
+            {address && <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}><span className="material-symbols-outlined" style={{ fontSize: 18, color: '#C9A84C', flexShrink: 0 }}>location_on</span><span>{address}</span></div>}
+            {phone && <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}><span className="material-symbols-outlined" style={{ fontSize: 18, color: '#C9A84C', flexShrink: 0 }}>phone</span><span>{phone}</span></div>}
+            {email && <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}><span className="material-symbols-outlined" style={{ fontSize: 18, color: '#C9A84C', flexShrink: 0 }}>email</span><a href={`mailto:${email}`} style={{ color: '#9CA3AF', textDecoration: 'none' }}>{email}</a></div>}
           </div>
         </div>
       </div>
 
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', padding: '1rem 1.5rem', textAlign: 'center', fontSize: 12, color: '#6B7280' }}>
-        © {new Date().getFullYear()} {siteName}. Hak cipta dilindungi.
+        © {new Date().getFullYear()} {siteName}. {footerCopyright}.
       </div>
 
       <style>{`

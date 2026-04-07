@@ -36,6 +36,7 @@ const settingsItems = [
   { href: '/admin/settings/general', icon: 'tune', label: 'Pengaturan Umum' },
   { href: '/admin/settings/homepage', icon: 'web', label: 'Editor Homepage' },
   { href: '/admin/settings/instagram', icon: 'photo_camera', label: 'Instagram' },
+  { href: '/admin/users', icon: 'manage_accounts', label: 'Kelola User' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -202,6 +203,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Pengaturan Section */}
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', padding: '0.5rem 0.75rem', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '1.5rem' }}>Pengaturan</div>
           {settingsItems.map(item => {
+            // Hide users menu unless SUPER_ADMIN
+            if (item.href === '/admin/users' && role !== 'SUPER_ADMIN') return null;
             const isActive = pathname === item.href || pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href} style={{

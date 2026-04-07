@@ -24,7 +24,7 @@ export default async function PageDetailPage({ params }: { params: Promise<{ slu
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '3rem 1.5rem' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto', padding: '6rem 1.5rem 3rem' }}>
       {/* Breadcrumb */}
       <nav style={{ fontSize: 13, color: '#9CA3AF', marginBottom: '1.5rem' }}>
         <a href="/" style={{ color: '#1B6B44', textDecoration: 'none' }}>Beranda</a>

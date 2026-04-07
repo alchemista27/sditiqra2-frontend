@@ -404,3 +404,41 @@ export const instagramApi = {
     }),
 };
 
+// ─── USER MANAGEMENT (Super Admin) ─────────────────────────────
+export interface UserItem {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export const usersApi = {
+  getAll: (token: string) =>
+    fetcher<{ data: UserItem[] }>('/users', { headers: { Authorization: `Bearer ${token}` } }),
+  getById: (token: string, id: string) =>
+    fetcher<{ data: UserItem }>(`/users/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+  create: (token: string, data: { name: string; email: string; password: string; role?: string }) =>
+    fetcher<{ data: UserItem }>('/users', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  update: (token: string, id: string, data: { name?: string; role?: string; isActive?: boolean }) =>
+    fetcher<{ data: UserItem }>(`/users/${id}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+  resetPassword: (token: string, id: string, newPassword: string) =>
+    fetcher<{ data: null }>(`/users/${id}/password`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newPassword }),
+    }),
+  delete: (token: string, id: string) =>
+    fetcher(`/users/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+};
+

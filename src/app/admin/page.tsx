@@ -25,17 +25,18 @@ export default function AdminDashboard() {
   }, []);
 
   const statCards = [
-    { label: 'Total Berita', value: stats.posts, icon: '📰', href: '/admin/posts', color: '#1B6B44' },
-    { label: 'Halaman Statis', value: stats.pages, icon: '📄', href: '/admin/pages', color: '#2D9164' },
-    { label: 'Kategori', value: stats.categories, icon: '🏷️', href: '/admin/categories', color: '#C9A84C' },
+    { label: 'Total Berita', value: stats.posts, icon: 'newspaper', href: '/admin/posts', color: '#1B6B44' },
+    { label: 'Halaman Statis', value: stats.pages, icon: 'description', href: '/admin/pages', color: '#2D9164' },
+    { label: 'Kategori', value: stats.categories, icon: 'sell', href: '/admin/categories', color: '#C9A84C' },
   ];
 
   return (
     <div>
       {/* Welcome */}
       <div style={{ background: 'linear-gradient(135deg, #1B6B44, #2D9164)', borderRadius: 20, padding: '1.75rem 2rem', marginBottom: '1.5rem', color: '#fff' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: '0.35rem' }}>
-          Selamat datang, {user?.name?.split(' ')[0] || 'Admin'} 👋
+        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 26 }}>waving_hand</span>
+          Selamat datang, {user?.name?.split(' ')[0] || 'Admin'}
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>Kelola konten website SD IT Iqra 2 Bengkulu dari sini.</p>
       </div>
@@ -47,7 +48,9 @@ export default function AdminDashboard() {
             <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 16, padding: '1.5rem', transition: 'box-shadow 0.2s', display: 'flex', alignItems: 'center', gap: '1rem' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 25px rgba(0,0,0,0.08)'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = 'none'}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: `${card.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>{card.icon}</div>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: `${card.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 24, color: card.color }}>{card.icon}</span>
+              </div>
               <div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: card.color }}>{card.value}</div>
                 <div style={{ fontSize: 13, color: '#6B7280' }}>{card.label}</div>
@@ -62,14 +65,15 @@ export default function AdminDashboard() {
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: '1rem' }}>Aksi Cepat</h2>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {[
-            { href: '/admin/posts/new', label: '+ Tulis Berita', bg: '#1B6B44' },
-            { href: '/admin/pages/new', label: '+ Buat Halaman', bg: '#2D9164' },
-            { href: '/admin/categories', label: '+ Tambah Kategori', bg: '#C9A84C' },
-            { href: '/admin/media', label: '📁 Kelola Media', bg: '#374151' },
+            { href: '/admin/posts/new', label: 'Tulis Berita', icon: 'edit', bg: '#1B6B44' },
+            { href: '/admin/pages/create', label: 'Buat Halaman', icon: 'note_add', bg: '#2D9164' },
+            { href: '/admin/categories', label: 'Kategori', icon: 'category', bg: '#C9A84C' },
+            { href: '/admin/media', label: 'Kelola Media', icon: 'folder', bg: '#374151' },
           ].map(a => (
-            <Link key={a.href} href={a.href} style={{ padding: '0.6rem 1.25rem', background: a.bg, color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'opacity 0.2s' }}
+            <Link key={a.href} href={a.href} style={{ padding: '0.6rem 1.25rem', background: a.bg, color: '#fff', borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: 'none', transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '0.85'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '1'}>
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{a.icon}</span>
               {a.label}
             </Link>
           ))}
