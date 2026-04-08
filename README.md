@@ -27,6 +27,54 @@ Satu *super-dashboard* untuk mengelola seluruh aspek digital (CMS, PPDB, dan Abs
 - **Admin PPDB:** Alat sortir untuk menyaring ribuan pendaftar, memvalidasi bukti tf pembayaran, meluluskan peserta, dan mengekspor rekapitulasi ke Dinas/Excel.
 - **Admin Absensi (Sinkron dengan Mobile App):** Pusat *monitoring* jam kerja pegawai GPS. Menampilkan peta radius toleransi *Geofencing* absensi, meja persetujuan izin/sakit elektronik, dan sensor rekam histori pelanggaran koordinat (*Mock Location*) mapun gagal *Face Recognition*. Dilengkapi ekspor Excel per-bulan harian lengkap dengan status *Late* (Terlambat) dan Alasan Absen.
 
+## 📸 Tampilan Aplikasi
+
+### Website Publik
+
+| Halaman | Screenshot |
+|---------|------------|
+| Halaman Beranda | ![Halaman Beranda](./screenshots/halaman-beranda.png) |
+| Halaman Berita | ![Halaman Berita](./screenshots/halaman-berita.png) |
+| Halaman Galeri | ![Halaman Galeri](./screenshots/halaman-galeri.png) |
+
+### Portal PPDB
+
+| Halaman | Screenshot |
+|---------|------------|
+| Portal Utama PPDB | ![PPDB Utama](./screenshots/halaman-ppdb.png) |
+| Form Registrasi | ![Form Registrasi](./screenshots/halaman-ppdb-1.png) |
+| Login PPDB | ![Login PPDB](./screenshots/halaman-ppdb-login.png) |
+| Register PPDB | ![Register PPDB](./screenshots/halaman-ppdb-register.png) |
+| Dashboard Orang Tua | ![Dashboard Orang Tua](./screenshots/halaman-ppdb-orang-tua.png) |
+
+### Dashboard Admin
+
+| Halaman | Screenshot |
+|---------|------------|
+| Login Admin | ![Login Admin](./screenshots/halaman-admin-login.png) |
+| Dashboard Utama | ![Dashboard Admin](./screenshots/halaman-dashboard-admin.png) |
+| Kelola Berita | ![Kelola Berita](./screenshots/halaman-dashboard-berita.png) |
+| Edit Berita | ![Edit Berita](./screenshots/halaman-dashboard-edit-berita.png) |
+| Kelola Halaman | ![Kelola Halaman](./screenshots/halaman-dashboard-halaman.png) |
+| Editor Halaman | ![Editor Halaman](./screenshots/halaman-dashboard-editor-halaman.png) |
+| Edit Menu | ![Edit Menu](./screenshots/halaman-edit-menu.png) |
+| Kelola Kategori | ![Kelola Kategori](./screenshots/halaman-dashboard-kategori.png) |
+| Kelola Galeri | ![Kelola Galeri](./screenshots/halaman-dashboard-galeri.png) |
+| Media Library | ![Media Library](./screenshots/halaman-dashboard-media-library.png) |
+| Homepage Editor | ![Homepage Editor](./screenshots/halaman-homepage-editor.png) |
+| Pengaturan Umum | ![Pengaturan Umum](./screenshots/halaman-general-settings.png) |
+| Kelola User | ![Kelola User](./screenshots/halaman-manage-user.png) |
+| Kelola Tahun Ajaran Aktif | ![Tahun Ajaran Aktif](./screenshots/halaman-manage-tahun-ajaran-aktif.png) |
+| Dashboard Tahun Ajaran | ![Dashboard TA](./screenshots/halaman-dashboard-manage-tahun-ajaran.png) |
+| Kelola PPDB | ![Kelola PPDB](./screenshots/halaman-dashboard-manage-ppdb.png) |
+| Jadwal Observasi | ![Jadwal Observasi](./screenshots/halaman-dashboard-jadwal-observasi.png) |
+| Kelola Kehadiran | ![Kelola Kehadiran](./screenshots/halaman-dashboard-manage-kehadiran.png) |
+| Kelola Lokasi Absensi | ![Kelola Lokasi](./screenshots/halaman-manage-lokasi.png) |
+| Kelola Hari Libur | ![Hari Libur](./screenshots/halaman-dashboard-manage-hari-libur.png) |
+| Kelola Kelas | ![Kelas](./screenshots/halaman-dashboard-manage-kelas.png) |
+| Laporan Kehadiran | ![Laporan Kehadiran](./screenshots/halaman-laporan-kehadiran.png) |
+| Auto Post Instagram | ![Auto Post IG](./screenshots/halaman-autopost-ig.png) |
+
 ## 💻 Panduan Menjalankan Frontend
 
 1. Node.js minimal v20-v24 telah terinstal.
